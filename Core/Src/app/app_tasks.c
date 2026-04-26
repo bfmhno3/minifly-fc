@@ -2,6 +2,7 @@
 
 #include "main.h"
 #include "cmsis_os.h"
+#include "comm/radiolink.h"
 
 #define APP_TASK_STACK_SMALL_BYTES (128U * 4U)
 #define APP_TASK_STACK_MEDIUM_BYTES (192U * 4U)
@@ -13,6 +14,7 @@ typedef struct {
     const char *name;
     uint32_t stack_size;
     osPriority_t priority;
+    osThreadFunc_t func;
 } app_task_definition_t;
 
 static osThreadId_t radiolink_task_handle;
@@ -38,16 +40,16 @@ static void app_task_placeholder_entry(void *argument)
 void app_tasks_create(void)
 {
     static const app_task_definition_t task_definitions[] = {
-        {&radiolink_task_handle, "radiolink", APP_TASK_STACK_SMALL_BYTES, osPriorityHigh},
-        {&usblink_rx_task_handle, "usblinkRx", APP_TASK_STACK_SMALL_BYTES, osPriorityAboveNormal},
-        {&usblink_tx_task_handle, "usblinkTx", APP_TASK_STACK_SMALL_BYTES, osPriorityNormal},
-        {&atkp_tx_task_handle, "atkpTx", APP_TASK_STACK_SMALL_BYTES, osPriorityNormal},
-        {&atkp_rx_task_handle, "atkpRx", APP_TASK_STACK_MEDIUM_BYTES, osPriorityHigh},
-        {&config_service_task_handle, "configSvc", APP_TASK_STACK_SMALL_BYTES, osPriorityLow},
-        {&pm_service_task_handle, "pmSvc", APP_TASK_STACK_SMALL_BYTES, osPriorityBelowNormal},
-        {&sensors_task_handle, "sensors", APP_TASK_STACK_LARGE_BYTES, osPriorityAboveNormal},
-        {&stabilizer_task_handle, "stabilizer", APP_TASK_STACK_LARGE_BYTES, osPriorityHigh},
-        {&module_manager_task_handle, "moduleMgr", APP_TASK_STACK_SMALL_BYTES, osPriorityLow},
+        {&radiolink_task_handle, "radiolink", APP_TASK_STACK_SMALL_BYTES, osPriorityHigh, radiolink_task},
+        {&usblink_rx_task_handle, "usblinkRx", APP_TASK_STACK_SMALL_BYTES, osPriorityAboveNormal, app_task_placeholder_entry},
+        {&usblink_tx_task_handle, "usblinkTx", APP_TASK_STACK_SMALL_BYTES, osPriorityNormal, app_task_placeholder_entry},
+        {&atkp_tx_task_handle, "atkpTx", APP_TASK_STACK_SMALL_BYTES, osPriorityNormal, app_task_placeholder_entry},
+        {&atkp_rx_task_handle, "atkpRx", APP_TASK_STACK_MEDIUM_BYTES, osPriorityHigh, app_task_placeholder_entry},
+        {&config_service_task_handle, "configSvc", APP_TASK_STACK_SMALL_BYTES, osPriorityLow, app_task_placeholder_entry},
+        {&pm_service_task_handle, "pmSvc", APP_TASK_STACK_SMALL_BYTES, osPriorityBelowNormal, app_task_placeholder_entry},
+        {&sensors_task_handle, "sensors", APP_TASK_STACK_LARGE_BYTES, osPriorityAboveNormal, app_task_placeholder_entry},
+        {&stabilizer_task_handle, "stabilizer", APP_TASK_STACK_LARGE_BYTES, osPriorityHigh, app_task_placeholder_entry},
+        {&module_manager_task_handle, "moduleMgr", APP_TASK_STACK_SMALL_BYTES, osPriorityLow, app_task_placeholder_entry},
     };
 
     for (uint32_t index = 0; index < (sizeof(task_definitions) / sizeof(task_definitions[0])); ++index) {
@@ -58,7 +60,7 @@ void app_tasks_create(void)
             .priority = task_definition->priority,
         };
 
-        *task_definition->handle = osThreadNew(app_task_placeholder_entry, NULL, &attributes);
+        *task_definition->handle = osThreadNew(task_definition->func, NULL, &attributes);
         if (*task_definition->handle == NULL) {
             Error_Handler();
         }
