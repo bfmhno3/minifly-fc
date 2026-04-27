@@ -4,6 +4,7 @@
 #include "cmsis_os.h"
 #include "comm/radiolink.h"
 #include "comm/usblink.h"
+#include "comm/atkp.h"
 
 #define APP_TASK_STACK_SMALL_BYTES (128U * 4U)
 #define APP_TASK_STACK_MEDIUM_BYTES (192U * 4U)
@@ -44,8 +45,8 @@ void app_tasks_create(void)
         {&radiolink_task_handle, "radiolink", APP_TASK_STACK_SMALL_BYTES, osPriorityHigh, radiolink_task},
         {&usblink_rx_task_handle, "usblinkRx", APP_TASK_STACK_SMALL_BYTES, osPriorityAboveNormal, usblink_rx_task},
         {&usblink_tx_task_handle, "usblinkTx", APP_TASK_STACK_SMALL_BYTES, osPriorityNormal, usblink_tx_task},
-        {&atkp_tx_task_handle, "atkpTx", APP_TASK_STACK_SMALL_BYTES, osPriorityNormal, app_task_placeholder_entry},
-        {&atkp_rx_task_handle, "atkpRx", APP_TASK_STACK_MEDIUM_BYTES, osPriorityHigh, app_task_placeholder_entry},
+        {&atkp_tx_task_handle, "atkpTx", APP_TASK_STACK_SMALL_BYTES, osPriorityNormal, atkp_tx_task},
+        {&atkp_rx_task_handle, "atkpRx", APP_TASK_STACK_MEDIUM_BYTES, osPriorityHigh, atkp_rx_task},
         {&config_service_task_handle, "configSvc", APP_TASK_STACK_SMALL_BYTES, osPriorityLow, app_task_placeholder_entry},
         {&pm_service_task_handle, "pmSvc", APP_TASK_STACK_SMALL_BYTES, osPriorityBelowNormal, app_task_placeholder_entry},
         {&sensors_task_handle, "sensors", APP_TASK_STACK_LARGE_BYTES, osPriorityAboveNormal, app_task_placeholder_entry},
