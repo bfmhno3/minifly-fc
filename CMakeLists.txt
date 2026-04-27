@@ -56,6 +56,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/app/app_hooks.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/config_service.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/pm_service.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/console_service.c
 )
 
 # Add include paths
