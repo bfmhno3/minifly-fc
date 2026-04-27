@@ -90,6 +90,15 @@ static void config_set_defaults(void)
     config_param.trimR = 0.0f;
     config_param.thrustBase = 34000;
 
+    config_param.cmdTune.rateScaleRP = 360.0f;
+    config_param.cmdTune.rateScaleYaw = 180.0f;
+    config_param.cmdTune.angleScaleRP = 30.0f;
+    config_param.cmdTune.yawRateScale = 120.0f;
+    config_param.cmdTune.autolandDescent = 0.5f;
+    config_param.cmdTune.autolandRampStep = 327.675f;
+    config_param.cmdTune.takeoffRampStep = 655.35f;
+    config_param.cmdTune.takeoffMinThrust = 16383.75f;
+
     config_param.checksum = config_checksum(&config_param);
 
     memcpy(&config_param_default, &config_param, sizeof(config_param_t));

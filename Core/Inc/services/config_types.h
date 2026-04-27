@@ -35,6 +35,18 @@ typedef struct
 
 typedef struct
 {
+    float rateScaleRP;
+    float rateScaleYaw;
+    float angleScaleRP;
+    float yawRateScale;
+    float autolandDescent;
+    float autolandRampStep;
+    float takeoffRampStep;
+    float takeoffMinThrust;
+} commander_tune_t;
+
+typedef struct
+{
     uint8_t version;
     pid_group_t pidAngle;
     pid_group_t pidRate;
@@ -42,6 +54,7 @@ typedef struct
     float trimP;
     float trimR;
     uint16_t thrustBase;
+    commander_tune_t cmdTune;
     uint8_t checksum;
 } __attribute__((packed)) config_param_t;
 
