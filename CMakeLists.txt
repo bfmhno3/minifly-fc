@@ -59,6 +59,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/console_service.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/ledseq.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/comm_stack.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/radiolink.c
 )
 
 # Add include paths
