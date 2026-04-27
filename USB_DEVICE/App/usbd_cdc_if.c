@@ -22,7 +22,7 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include "cmsis_os.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -128,7 +128,8 @@ static int8_t CDC_Receive_FS(uint8_t* pbuf, uint32_t *Len);
 static int8_t CDC_TransmitCplt_FS(uint8_t *pbuf, uint32_t *Len, uint8_t epnum);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
-
+extern QueueHandle_t usblink_rx_queue;
+extern SemaphoreHandle_t usblink_tx_done;
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
 
 /**
@@ -263,6 +264,17 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 6 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+
+  if (usblink_rx_queue != NULL) {
+    BaseType_t woken = pdFALSE;
+    uint32_t i;
+
+    for (i = 0; i < *Len; i++)
+      xQueueSendFromISR(usblink_rx_queue, &Buf[i], &woken);
+
+    portYIELD_FROM_ISR(woken);
+  }
+
   return (USBD_OK);
   /* USER CODE END 6 */
 }
@@ -311,6 +323,12 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
   UNUSED(Buf);
   UNUSED(Len);
   UNUSED(epnum);
+
+  if (usblink_tx_done != NULL) {
+    BaseType_t woken = pdFALSE;
+    xSemaphoreGiveFromISR(usblink_tx_done, &woken);
+    portYIELD_FROM_ISR(woken);
+  }
   /* USER CODE END 13 */
   return result;
 }
