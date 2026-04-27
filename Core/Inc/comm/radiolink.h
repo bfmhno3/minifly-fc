@@ -19,6 +19,7 @@ typedef struct {
 void radiolink_init(void);
 void radiolink_task(void *arg);
 bool radiolink_get_frame(radio_frame_t *frame);
+bool radiolink_send_frame(const radio_frame_t *frame);
 
 #ifdef __cplusplus
 }

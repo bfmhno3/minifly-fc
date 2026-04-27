@@ -243,6 +243,11 @@ void radiolink_task(void *arg)
 	}
 }
 
+bool radiolink_send_frame(const radio_frame_t *frame)
+{
+	return xQueueSend(g_rl.tx_queue, frame, 0) == pdTRUE;
+}
+
 bool radiolink_get_frame(radio_frame_t *frame)
 {
 	if (!g_rl.has_frame)
