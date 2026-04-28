@@ -64,6 +64,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/atkp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/commander.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/platform/filter.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/sensors.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/attitude_estimator.c
 )
 
 # Add include paths
