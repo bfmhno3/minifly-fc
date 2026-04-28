@@ -63,6 +63,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/usblink.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/atkp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/commander.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/platform/filter.c
 )
 
 # Add include paths
