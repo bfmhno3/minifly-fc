@@ -5,6 +5,7 @@
 #include "comm/radiolink.h"
 #include "comm/usblink.h"
 #include "comm/atkp.h"
+#include "services/sensors.h"
 
 #define APP_TASK_STACK_SMALL_BYTES (128U * 4U)
 #define APP_TASK_STACK_MEDIUM_BYTES (192U * 4U)
@@ -49,7 +50,7 @@ void app_tasks_create(void)
         {&atkp_rx_task_handle, "atkpRx", APP_TASK_STACK_MEDIUM_BYTES, osPriorityHigh, atkp_rx_task},
         {&config_service_task_handle, "configSvc", APP_TASK_STACK_SMALL_BYTES, osPriorityLow, app_task_placeholder_entry},
         {&pm_service_task_handle, "pmSvc", APP_TASK_STACK_SMALL_BYTES, osPriorityBelowNormal, app_task_placeholder_entry},
-        {&sensors_task_handle, "sensors", APP_TASK_STACK_LARGE_BYTES, osPriorityAboveNormal, app_task_placeholder_entry},
+        {&sensors_task_handle, "sensors", APP_TASK_STACK_LARGE_BYTES, osPriorityAboveNormal, sensors_task},
         {&stabilizer_task_handle, "stabilizer", APP_TASK_STACK_LARGE_BYTES, osPriorityHigh, app_task_placeholder_entry},
         {&module_manager_task_handle, "moduleMgr", APP_TASK_STACK_SMALL_BYTES, osPriorityLow, app_task_placeholder_entry},
     };
