@@ -6,6 +6,7 @@
 #include "comm/usblink.h"
 #include "comm/atkp.h"
 #include "services/sensors.h"
+#include "control/stabilizer.h"
 
 #define APP_TASK_STACK_SMALL_BYTES (128U * 4U)
 #define APP_TASK_STACK_MEDIUM_BYTES (192U * 4U)
@@ -51,7 +52,7 @@ void app_tasks_create(void)
         {&config_service_task_handle, "configSvc", APP_TASK_STACK_SMALL_BYTES, osPriorityLow, app_task_placeholder_entry},
         {&pm_service_task_handle, "pmSvc", APP_TASK_STACK_SMALL_BYTES, osPriorityBelowNormal, app_task_placeholder_entry},
         {&sensors_task_handle, "sensors", APP_TASK_STACK_LARGE_BYTES, osPriorityAboveNormal, sensors_task},
-        {&stabilizer_task_handle, "stabilizer", APP_TASK_STACK_LARGE_BYTES, osPriorityHigh, app_task_placeholder_entry},
+        {&stabilizer_task_handle, "stabilizer", APP_TASK_STACK_LARGE_BYTES, osPriorityHigh, stabilizer_task},
         {&module_manager_task_handle, "moduleMgr", APP_TASK_STACK_SMALL_BYTES, osPriorityLow, app_task_placeholder_entry},
     };
 

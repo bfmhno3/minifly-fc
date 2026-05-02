@@ -73,6 +73,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/power_control.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/anomaly_detect.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/flip.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/stabilizer.c
 )
 
 # Add include paths
