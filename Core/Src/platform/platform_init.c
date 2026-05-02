@@ -1,5 +1,6 @@
 #include "platform/platform_init.h"
 
+#include "platform/platform_irq.h"
 #include "bsp_led.h"
 #include "bsp_module.h"
 #include "bsp_sensors.h"
@@ -9,6 +10,7 @@
 
 void platform_init(void)
 {
+    platform_irq_init();
     bsp_led_init();
     bsp_module_init();
     bsp_sensors_init();
