@@ -1,4 +1,5 @@
 #include "modules/module_manager.h"
+#include "modules/optical_flow_module.h"
 #include "bsp_module.h"
 
 #include "FreeRTOS.h"
@@ -36,8 +37,8 @@ static void module_handler_led_ring_init(void)     { /* TODO: ledring_module_ini
 static void module_handler_led_ring_deinit(void)   { /* TODO: ledring_module_deinit() */ }
 static void module_handler_wifi_init(void)         { /* TODO: wifi_module_init() */ }
 static void module_handler_wifi_deinit(void)       { /* TODO: wifi_module_deinit() */ }
-static void module_handler_optical_flow_init(void) { /* TODO: optical_flow_module_init() */ }
-static void module_handler_optical_flow_deinit(void) { /* TODO: optical_flow_module_deinit() */ }
+static void module_handler_optical_flow_init(void) { optical_flow_module_init(); }
+static void module_handler_optical_flow_deinit(void) { optical_flow_module_deinit(); }
 static void module_handler_reserved_init(void)     { }
 static void module_handler_reserved_deinit(void)   { }
 

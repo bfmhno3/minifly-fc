@@ -7,6 +7,7 @@
 #include "control/flip.h"
 #include "comm/commander.h"
 #include "services/sensors.h"
+#include "modules/optical_flow_module.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -119,10 +120,27 @@ void stabilizer_task(void *arg)
 			attitude_estimator_get_attitude(&state.attitude);
 		}
 
+		/* optical flow update, 100hz */
+		if (RATE_DO_EXECUTE(RATE_100_HZ, tick)) {
+			optical_flow_module_update(&state, 0.01f);
+		}
+
 		/* position estimation, 250hz */
 		if (RATE_DO_EXECUTE(POSITION_EST_RATE, tick)) {
+			pos_estimator_ext_t flow_ext;
+			optical_flow_data_t ofd;
+
+			optical_flow_module_get_data(&ofd);
+			flow_ext.valid = ofd.valid;
+			flow_ext.pos_sum[0] = ofd.pos_sum[0];
+			flow_ext.pos_sum[1] = ofd.pos_sum[1];
+			flow_ext.vel_lpf[0] = ofd.vel_lpf[0];
+			flow_ext.vel_lpf[1] = ofd.vel_lpf[1];
+			flow_ext.laser_range = ofd.laser_range;
+			flow_ext.laser_quality = ofd.laser_quality;
+
 			position_estimator_update(&state, &sensor_data,
-						  NULL, POSITION_EST_DT);
+						  &flow_ext, POSITION_EST_DT);
 		}
 
 		/* commander setpoint, 100hz */
