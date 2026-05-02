@@ -71,6 +71,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/position_pid.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/state_control.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/power_control.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/anomaly_detect.c
 )
 
 # Add include paths
