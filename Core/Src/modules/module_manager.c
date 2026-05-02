@@ -1,4 +1,5 @@
 #include "modules/module_manager.h"
+#include "modules/ledring_module.h"
 #include "modules/optical_flow_module.h"
 #include "modules/wifi_module.h"
 #include "bsp_module.h"
@@ -34,8 +35,8 @@ static const module_adc_entry_t adc_table[] = {
 
 static void module_handler_none_init(void)         { }
 static void module_handler_none_deinit(void)       { }
-static void module_handler_led_ring_init(void)     { /* TODO: ledring_module_init() */ }
-static void module_handler_led_ring_deinit(void)   { /* TODO: ledring_module_deinit() */ }
+static void module_handler_led_ring_init(void)     { ledring_module_init(); }
+static void module_handler_led_ring_deinit(void)   { ledring_module_deinit(); }
 static void module_handler_wifi_init(void)         { wifi_module_init(); }
 static void module_handler_wifi_deinit(void)       { wifi_module_deinit(); }
 static void module_handler_optical_flow_init(void) { optical_flow_module_init(); }

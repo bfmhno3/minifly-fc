@@ -22,6 +22,8 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "modules/module_manager.h"
+#include "bsp_ws2812.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -247,7 +249,15 @@ void DMA1_Stream3_IRQHandler(void)
 void DMA1_Stream4_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream4_IRQn 0 */
-
+  /*
+   * DMA1_Stream4 is shared between SPI2 TX and WS2812 (TIM3_CH1).
+   * Dispatch exclusively based on the active module to avoid
+   * one handler clearing the other's interrupt flags.
+   */
+  if (module_manager_get_active() == BSP_MODULE_LED_RING) {
+      bsp_ws2812_dma_isr();
+      return;
+  }
   /* USER CODE END DMA1_Stream4_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_spi2_tx);
   /* USER CODE BEGIN DMA1_Stream4_IRQn 1 */
