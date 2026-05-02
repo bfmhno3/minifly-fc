@@ -7,6 +7,7 @@
 #include "comm/atkp.h"
 #include "services/sensors.h"
 #include "control/stabilizer.h"
+#include "modules/module_manager.h"
 
 #define APP_TASK_STACK_SMALL_BYTES (128U * 4U)
 #define APP_TASK_STACK_MEDIUM_BYTES (192U * 4U)
@@ -53,7 +54,7 @@ void app_tasks_create(void)
         {&pm_service_task_handle, "pmSvc", APP_TASK_STACK_SMALL_BYTES, osPriorityBelowNormal, app_task_placeholder_entry},
         {&sensors_task_handle, "sensors", APP_TASK_STACK_LARGE_BYTES, osPriorityAboveNormal, sensors_task},
         {&stabilizer_task_handle, "stabilizer", APP_TASK_STACK_LARGE_BYTES, osPriorityHigh, stabilizer_task},
-        {&module_manager_task_handle, "moduleMgr", APP_TASK_STACK_SMALL_BYTES, osPriorityLow, app_task_placeholder_entry},
+        {&module_manager_task_handle, "moduleMgr", APP_TASK_STACK_SMALL_BYTES, osPriorityLow, module_manager_task},
     };
 
     for (uint32_t index = 0; index < (sizeof(task_definitions) / sizeof(task_definitions[0])); ++index) {

@@ -5,6 +5,7 @@
 #include "bsp_sensors.h"
 #include "services/config_service.h"
 #include "control/stabilizer.h"
+#include "modules/module_manager.h"
 
 void platform_init(void)
 {
@@ -13,6 +14,7 @@ void platform_init(void)
     bsp_sensors_init();
     config_service_init();
     stabilizer_init();
+    module_manager_init();
 }
 
 bool platform_self_test(void)
