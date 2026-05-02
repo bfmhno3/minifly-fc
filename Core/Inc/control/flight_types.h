@@ -63,6 +63,22 @@ typedef struct {
     float thrust;
 } setpoint_t;
 
+typedef enum {
+	FLIP_DIR_CENTER = 0,
+	FLIP_DIR_FORWARD,
+	FLIP_DIR_BACK,
+	FLIP_DIR_LEFT,
+	FLIP_DIR_RIGHT,
+} flip_dir_e;
+
+typedef struct {
+	int16_t    roll;
+	int16_t    pitch;
+	int16_t    yaw;
+	float      thrust;
+	flip_dir_e flip_dir;
+} control_t;
+
 #ifdef __cplusplus
 }
 #endif
