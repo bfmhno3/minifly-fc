@@ -2,6 +2,7 @@
 
 #include "platform/platform_irq.h"
 #include "platform/platform_fault.h"
+#include "platform/timebase.h"
 #include "bsp_led.h"
 #include "bsp_module.h"
 #include "bsp_sensors.h"
@@ -12,6 +13,7 @@
 void platform_init(void)
 {
     platform_irq_init();
+    platform_timebase_init();
     platform_fault_init();
     bsp_led_init();
     bsp_module_init();
