@@ -1,3 +1,24 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Sensor data acquisition and processing pipeline.
+ *
+ * @details
+ * Reads raw IMU (MPU6500) and barometer (BMP280 or SPL06) data via BSP,
+ * applies gyro bias calibration, accelerometer scale correction, 2nd-order
+ * low-pass filtering, and barometer compensation math.
+ *
+ * Hardware dependencies:
+ * - MPU6500 on SPI, configured for +/-2000 dps gyro, +/-16 g accel, 1 kHz ODR.
+ * - Barometer on I2C1 (BMP280 or SPL06, auto-detected at init).
+ * - EXTI4 (PA4) rising-edge interrupt for MPU DRDY.
+ *
+ * Concurrency:
+ * - sensors_task runs at 1 kHz, wakes on DRDY semaphore.
+ * - Filtered data published to single-element FreeRTOS queues (xQueueOverwrite).
+ * - Gyro bias calibration runs inline in sensors_process_imu (lock-free).
+ */
+
 #include "services/sensors.h"
 
 #include "bsp_sensors.h"
@@ -506,6 +527,7 @@ static void sensors_apply_lpf_3axis(lpf2pData *lpf, Axis3f *in)
  * Public API — initialization
  * ======================================================================== */
 
+/** @brief  See sensors.h */
 void sensors_init(void)
 {
     if (sensors_is_init) {
@@ -540,6 +562,7 @@ void sensors_init(void)
  * Public API — tests and queries
  * ======================================================================== */
 
+/** @brief  See sensors.h */
 bool sensors_test(void)
 {
     if (!sensors_is_init) {
@@ -548,21 +571,25 @@ bool sensors_test(void)
     return dev_status.imu_present;
 }
 
+/** @brief  See sensors.h */
 bool sensors_are_calibrated(void)
 {
     return gyro_bias_found_val;
 }
 
+/** @brief  See sensors.h */
 bool sensors_is_mpu_present(void)
 {
     return dev_status.imu_present;
 }
 
+/** @brief  See sensors.h */
 bool sensors_is_baro_present(void)
 {
     return dev_status.barometer_present;
 }
 
+/** @brief  See sensors.h */
 void sensors_get_raw_data(Axis3i16 *acc, Axis3i16 *gyro, Axis3i16 *mag)
 {
     *acc = acc_raw_val;
@@ -574,21 +601,25 @@ void sensors_get_raw_data(Axis3i16 *acc, Axis3i16 *gyro, Axis3i16 *mag)
  * Public API — sensor data access
  * ======================================================================== */
 
+/** @brief  See sensors.h */
 bool sensors_read_gyro(Axis3f *gyro)
 {
     return xQueueReceive(gyro_queue, gyro, 0) == pdTRUE;
 }
 
+/** @brief  See sensors.h */
 bool sensors_read_acc(Axis3f *acc)
 {
     return xQueueReceive(accel_queue, acc, 0) == pdTRUE;
 }
 
+/** @brief  See sensors.h */
 bool sensors_read_baro(baro_t *baro)
 {
     return xQueueReceive(baro_queue, baro, 0) == pdTRUE;
 }
 
+/** @brief  See sensors.h */
 void sensors_acquire(sensor_data_t *out, uint32_t tick)
 {
     (void)tick;
@@ -604,6 +635,7 @@ void sensors_acquire(sensor_data_t *out, uint32_t tick)
  * and calibrated data to queues for downstream consumers.
  * ======================================================================== */
 
+/** @brief  See sensors.h */
 void sensors_task(void *arg)
 {
     (void)arg;

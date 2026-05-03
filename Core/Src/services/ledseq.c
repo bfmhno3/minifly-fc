@@ -1,3 +1,16 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  LED sequence animation engine implementation.
+ *
+ * @details
+ * Each LED gets a FreeRTOS software timer.  When a pattern runs, the timer
+ * callback (run_ledseq) steps through the pattern array, calling bsp_led_set
+ * for on/off steps and rearming the timer with the step's delay.
+ * Priority arbitration: the highest-priority (lowest index) non-stopped
+ * pattern wins the LED.
+ */
+
 #include "services/ledseq.h"
 
 #include "FreeRTOS.h"
@@ -53,6 +66,7 @@ static int state[BSP_LED_COUNT][LEDSEQ_PATTERN_COUNT];
 static TimerHandle_t timers[BSP_LED_COUNT];
 static SemaphoreHandle_t sem;
 
+/** @brief  See ledseq.h */
 void ledseq_init(void)
 {
     if (is_init)
@@ -73,6 +87,7 @@ void ledseq_init(void)
     is_init = true;
 }
 
+/** @brief  See ledseq.h */
 void ledseq_run(uint8_t target, uint8_t pattern)
 {
     int prio = get_prio(pattern);
@@ -88,6 +103,7 @@ void ledseq_run(uint8_t target, uint8_t pattern)
         run_ledseq(timers[target]);
 }
 
+/** @brief  See ledseq.h */
 void ledseq_stop(uint8_t target)
 {
     xSemaphoreTake(sem, portMAX_DELAY);
@@ -99,11 +115,13 @@ void ledseq_stop(uint8_t target)
     run_ledseq(timers[target]);
 }
 
+/** @brief  See ledseq.h */
 void ledseq_enable(bool enable)
 {
     enabled = enable;
 }
 
+/** @brief  See ledseq.h */
 bool ledseq_test(void)
 {
     ledseq_enable(true);

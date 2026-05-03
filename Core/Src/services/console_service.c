@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Buffered debug console output service implementation.
+ *
+ * @details
+ * Uses a 30-byte software buffer with a binary semaphore for mutual exclusion.
+ * The buffer is flushed to USART2 on newline or when full.
+ * ISR path uses HAL_UART_Transmit_IT (non-blocking); task path uses
+ * HAL_UART_Transmit (blocking).
+ */
+
 #include "services/console_service.h"
 
 #include <string.h>
@@ -13,6 +25,9 @@ static StaticSemaphore_t sem_buffer;
 static SemaphoreHandle_t tx_sem = NULL;
 static bool isInit = false;
 
+/**
+ * @brief  Flush the software buffer to USART2 (blocking).
+ */
 static void console_flush(void)
 {
     if (buffer_len > 0)
@@ -22,6 +37,7 @@ static void console_flush(void)
     }
 }
 
+/** @brief  See console_service.h */
 void console_service_init(void)
 {
     if (isInit)
@@ -40,11 +56,13 @@ void console_service_init(void)
     isInit = true;
 }
 
+/** @brief  See console_service.h */
 bool console_service_test(void)
 {
     return isInit;
 }
 
+/** @brief  See console_service.h */
 int console_service_putchar(int ch)
 {
     if (!isInit)
@@ -77,6 +95,7 @@ int console_service_putchar(int ch)
     return ch;
 }
 
+/** @brief  See console_service.h */
 int console_service_putchar_from_isr(int ch)
 {
     BaseType_t higherPriorityTaskWoken = pdFALSE;
@@ -106,6 +125,7 @@ int console_service_putchar_from_isr(int ch)
     return ch;
 }
 
+/** @brief  See console_service.h */
 int console_service_puts(const char *str)
 {
     int ret = 0;
@@ -127,6 +147,7 @@ int console_service_puts(const char *str)
     return ret;
 }
 
+/** @brief  See console_service.h */
 void console_service_write(const char *buf, size_t len)
 {
     size_t i;

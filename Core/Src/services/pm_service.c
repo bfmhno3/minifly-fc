@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Power management service implementation.
+ *
+ * @details
+ * Receives battery voltage from syslink via ATKP packets, tracks min/max,
+ * and evaluates power state from voltage thresholds and charger flags.
+ * The pm_service_task runs periodically (driven by the FreeRTOS scheduler)
+ * and transitions the state machine.
+ */
+
 #include "services/pm_service.h"
 
 #include <string.h>
@@ -14,6 +26,7 @@ static pm_state_t pm_state = PM_STATE_BATTERY;
 static pm_syslink_info_t pm_syslink_info;
 static bool is_init = false;
 
+/** @brief  See pm_service.h */
 void pm_service_init(void)
 {
     if (is_init)
@@ -31,11 +44,13 @@ void pm_service_init(void)
     is_init = true;
 }
 
+/** @brief  See pm_service.h */
 bool pm_service_test(void)
 {
     return is_init && (battery_voltage > 0);
 }
 
+/** @brief  See pm_service.h */
 void pm_service_update_voltage(void *atkp)
 {
     if (!is_init || atkp == NULL)
@@ -70,36 +85,43 @@ void pm_service_update_voltage(void *atkp)
     }
 }
 
+/** @brief  See pm_service.h */
 float pm_service_get_voltage(void)
 {
     return battery_voltage;
 }
 
+/** @brief  See pm_service.h */
 float pm_service_get_voltage_max(void)
 {
     return battery_voltage_max;
 }
 
+/** @brief  See pm_service.h */
 float pm_service_get_voltage_min(void)
 {
     return battery_voltage_min;
 }
 
+/** @brief  See pm_service.h */
 pm_state_t pm_service_get_state(void)
 {
     return pm_state;
 }
 
+/** @brief  See pm_service.h */
 bool pm_service_is_low_power(void)
 {
     return (pm_state == PM_STATE_LOW_POWER);
 }
 
+/** @brief  See pm_service.h */
 bool pm_service_is_charging(void)
 {
     return (pm_state == PM_STATE_CHARGING);
 }
 
+/** @brief  See pm_service.h */
 void pm_service_task(void *param)
 {
     (void)param;
@@ -137,9 +159,10 @@ void pm_service_task(void *param)
         }
     }
 
+    /* Decode charger status flags from syslink */
     uint8_t flags = pm_syslink_info.flags;
-    bool pgood = (flags & 0x01) != 0;
-    bool chg = (flags & 0x02) != 0;
+    bool pgood = (flags & 0x01) != 0;  /* Bit 0: USB power-good */
+    bool chg = (flags & 0x02) != 0;    /* Bit 1: charge-in-progress */
 
     if (pgood && !chg)
     {

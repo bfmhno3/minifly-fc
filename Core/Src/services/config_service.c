@@ -1,3 +1,21 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Configuration persistence service implementation.
+ *
+ * @details
+ * Stores a config_param_t in internal flash at BOARD_FLASH_CONFIG_ADDR.
+ * Read access is mutex-protected; writes are deferred to a low-priority
+ * FreeRTOS task via a queue to avoid blocking callers or ISRs on flash
+ * erase/write latency.
+ *
+ * Thread safety:
+ * - config_service_get() acquires the mutex for read access.
+ * - config_service_mut() returns a raw pointer (caller must not race).
+ * - config_service_mark_dirty() is ISR-safe (uses xQueueSendFromISR).
+ * - config_service_task() performs the actual flash write under mutex.
+ */
+
 #include "services/config_service.h"
 
 #include <string.h>
@@ -18,6 +36,9 @@ static volatile bool is_flying = false;
 static SemaphoreHandle_t mutex = NULL;
 static QueueHandle_t save_queue = NULL;
 
+/**
+ * @brief  Compute byte-sum checksum over the config struct (excluding checksum field).
+ */
 static uint8_t config_checksum(const config_param_t *data)
 {
     const uint8_t *c = (const uint8_t *)data;
@@ -103,6 +124,11 @@ static void config_set_defaults(void)
     memcpy(&config_param_default, &config_param, sizeof(config_param_t));
 }
 
+/**
+ * @brief  Load config from flash and validate version + checksum.
+ *
+ * @return true if flash data is valid and loaded, false otherwise.
+ */
 static bool config_load_from_flash(void)
 {
     if (!bsp_flash_read(BOARD_FLASH_CONFIG_ADDR, &config_param, sizeof(config_param_t)))
@@ -121,6 +147,11 @@ static bool config_load_from_flash(void)
     return false;
 }
 
+/**
+ * @brief  Compute checksum, erase sector, and write config to flash.
+ *
+ * @return true on success, false if erase or write fails.
+ */
 static bool config_save_to_flash(void)
 {
     config_param.checksum = config_checksum(&config_param);
@@ -133,6 +164,7 @@ static bool config_save_to_flash(void)
     return bsp_flash_write(BOARD_FLASH_CONFIG_ADDR, &config_param, sizeof(config_param_t));
 }
 
+/** @brief  See config_service.h */
 void config_service_init(void)
 {
     if (is_init)
@@ -155,21 +187,25 @@ void config_service_init(void)
     is_init = true;
 }
 
+/** @brief  See config_service.h */
 bool config_service_test(void)
 {
     return is_init;
 }
 
+/** @brief  See config_service.h */
 bool config_service_is_flying(void)
 {
     return is_flying;
 }
 
+/** @brief  See config_service.h */
 void config_service_set_flying(bool flying)
 {
     is_flying = flying;
 }
 
+/** @brief  See config_service.h */
 const config_param_t* config_service_get(void)
 {
     if (!is_init)
@@ -185,6 +221,7 @@ const config_param_t* config_service_get(void)
     return result;
 }
 
+/** @brief  See config_service.h */
 config_param_t* config_service_mut(void)
 {
     if (!is_init)
@@ -195,6 +232,7 @@ config_param_t* config_service_mut(void)
     return &config_param;
 }
 
+/** @brief  See config_service.h */
 void config_service_mark_dirty(void)
 {
     if (!is_init)
@@ -208,6 +246,7 @@ void config_service_mark_dirty(void)
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
+/** @brief  See config_service.h */
 void config_service_reset_pid(void)
 {
     if (!is_init)
@@ -224,6 +263,7 @@ void config_service_reset_pid(void)
     config_service_mark_dirty();
 }
 
+/** @brief  See config_service.h */
 void config_service_task(void *arg)
 {
     (void)arg;
