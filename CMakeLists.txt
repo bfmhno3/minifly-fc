@@ -45,35 +45,58 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
-    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Src/bsp_motors.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Src/bsp_led.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Src/bsp_watchdog.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Src/bsp_module.c
+    # BSP Layer
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Src/bsp_flash.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Src/bsp_led.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Src/bsp_module.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Src/bsp_motors.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Src/bsp_sensors.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Src/bsp_watchdog.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BSP/Src/bsp_ws2812.c
+
+    # app layer
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/app/app_boot.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/app/app_tasks.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/app/app_hooks.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/config_service.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/pm_service.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/console_service.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/ledseq.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/app/app_tasks.c
+
+    # comm layer
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/atkp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/comm_stack.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/commander.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/radiolink.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/usblink.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/atkp.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/comm/commander.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/platform/filter.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/sensors.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/attitude_estimator.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/position_estimator.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/attitude_pid.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/position_pid.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/state_control.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/power_control.c
+
+    # control layer
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/anomaly_detect.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/attitude_estimator.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/attitude_pid.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/flip.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/position_estimator.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/position_pid.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/power_control.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/stabilizer.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/control/state_control.c
+
+    # modules layer
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/modules/ledring_module.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/modules/module_manager.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/modules/optical_flow_module.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/modules/wifi_module.c
+
+    # platform layer
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/platform/filter.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/platform/maths.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/platform/platform_fault.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/platform/platform_init.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/platform/platform_irq.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/platform/timebase.c
+
+    # services layer
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/config_service.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/console_service.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/ledseq.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/pm_service.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/services/sensors.c
 )
 
 # Add include paths
