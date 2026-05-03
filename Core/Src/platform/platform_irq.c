@@ -3,7 +3,6 @@
 #include "stm32f4xx_hal.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "bsp_motors.h"
 
 /*
  * Firmware base offset for the vector table.
@@ -33,32 +32,4 @@ void SysTick_Handler(void)
         xPortSysTickHandler();
     else
         irq_tick_cnt++;
-}
-
-void HardFault_Handler(void)
-{
-    bsp_motors_stop_all();
-    while (1)
-        __NOP();
-}
-
-void MemManage_Handler(void)
-{
-    bsp_motors_stop_all();
-    while (1)
-        __NOP();
-}
-
-void BusFault_Handler(void)
-{
-    bsp_motors_stop_all();
-    while (1)
-        __NOP();
-}
-
-void UsageFault_Handler(void)
-{
-    bsp_motors_stop_all();
-    while (1)
-        __NOP();
 }
