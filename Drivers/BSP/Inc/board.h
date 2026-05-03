@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: MIT
 /**
- * @file board.h
+ * @file
  * @brief Umbrella header for the Minifly board definition module.
  *
  * Include this single header to gain access to all board-level constants:

@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: MIT
 /**
- * @file bsp_motors.h
+ * @file
  * @brief Board support package interface for the four motor PWM outputs.
  *
  * This module exposes a stable board-level API for motor output control while

@@ -8,8 +8,9 @@
 extern "C" {
 #endif
 
+// SPDX-License-Identifier: MIT
 /**
- * @file bsp_module.h
+ * @file
  * @brief Board support package interface for external module detect and power control.
  *
  * This module provides the board-level primitives needed by the future module

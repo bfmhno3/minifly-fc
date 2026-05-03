@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: MIT
 /**
- * @file bsp_motors.c
+ * @file
  * @brief Board support package implementation for the four motor PWM outputs.
  *
  * The implementation keeps the timer/channel mapping, initialization state, and

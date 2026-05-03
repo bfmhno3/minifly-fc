@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: MIT
 /**
- * @file board_memory.h
+ * @file
  * @brief Flash memory layout constants for the Minifly board.
  *
  * All addresses and sizes are expressed as preprocessor defines so they can

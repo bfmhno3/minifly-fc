@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: MIT
 /**
- * @file bsp_led.c
+ * @file
  * @brief Board support package implementation for on-board status LEDs.
  *
  * The implementation keeps the GPIO binding, electrical polarity, and logical

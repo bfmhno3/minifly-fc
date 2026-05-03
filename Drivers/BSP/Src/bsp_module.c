@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: MIT
 /**
- * @file bsp_module.c
+ * @file
  * @brief Board support package implementation for external module detect and power control.
  *
  * This module keeps the shared GPIO binding and ADC sampling details local to

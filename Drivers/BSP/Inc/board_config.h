@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: MIT
 /**
- * @file board_config.h
+ * @file
  * @brief Hardware feature configuration for the Minifly board.
  *
  * Centralizes board-level constants that were previously scattered across BSP

@@ -8,8 +8,9 @@
 extern "C" {
 #endif
 
+// SPDX-License-Identifier: MIT
 /**
- * @file bsp_led.h
+ * @file
  * @brief Board support package interface for on-board status LEDs.
  *
  * This module exposes a board-level LED control API while keeping the GPIO

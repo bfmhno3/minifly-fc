@@ -1,3 +1,18 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  WS2812 RGB LED driver using TIM3 CH1 + DMA double-buffer.
+ *
+ * @details
+ * Drives the LED ring module via PB4 (TIM3_CH1 AF output).  Power is
+ * controlled by PB5, headlight by PB0.  DMA1_Stream4 (channel 5) feeds
+ * the timer in double-buffer mode so the next LED's data is prepared while
+ * the current one is being clocked out.
+ *
+ * Concurrency: bsp_ws2812_send() blocks on a FreeRTOS binary semaphore
+ * until the DMA transfer completes.  The DMA ISR gives the semaphore
+ * from ISR context via xSemaphoreGiveFromISR().
+ */
 #include "bsp_ws2812.h"
 
 #include "stm32f4xx_hal.h"
@@ -10,11 +25,11 @@
  *   TIMING_ONE  = 0.8 us -> 96 * 0.8 = 76.8, round to 80
  *   TIMING_ZERO = 0.3 us -> 96 * 0.3 = 28.8, round to 30
  */
-#define TIMING_ONE   80
-#define TIMING_ZERO  30
-#define PWM_PERIOD   119   /* 96 MHz / 120 = 800 kHz */
+#define TIMING_ONE   80    /* ~0.8 us high for logic '1' */
+#define TIMING_ZERO  30    /* ~0.3 us high for logic '0' */
+#define PWM_PERIOD   119   /* 96 MHz / 120 = 800 kHz carrier */
 
-/* per-LED: 8 bits G + 8 bits R + 8 bits B = 24 PWM half-words */
+/* per-LED: 8 bits G + 8 bits R + 8 bits B = 24 PWM half-words (GRB order) */
 #define BITS_PER_LED  24
 
 /* --- GPIO pin definitions --- */
@@ -129,12 +144,18 @@ static void dma_init(void)
 
     __HAL_LINKDMA(&htim3, hdma[TIM_DMA_ID_CC1], hdma_tim3_ch1);
 
+    /* Low priority (9) to avoid blocking time-critical ISRs */
     HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 9, 0);
     HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
 }
 
 /* --- public API --- */
 
+/**
+ * @brief Initialize GPIO, TIM3, DMA, and synchronization primitive for WS2812.
+ *
+ * Safe to call multiple times; subsequent calls are no-ops.
+ */
 void bsp_ws2812_init(void)
 {
     if (is_init)
@@ -156,6 +177,9 @@ void bsp_ws2812_init(void)
     is_init = true;
 }
 
+/**
+ * @brief Stop PWM and release DMA.  Call before module power-down.
+ */
 void bsp_ws2812_deinit(void)
 {
     if (!is_init)
@@ -167,6 +191,15 @@ void bsp_ws2812_deinit(void)
     is_init = false;
 }
 
+/**
+ * @brief Send color data to the WS2812 chain via DMA double-buffer.
+ *
+ * @param[in] color  Array of [len][3] in GRB order (green, red, blue).
+ * @param[in] len    Number of LEDs to drive.
+ *
+ * @note Blocks on a semaphore until any in-flight transfer completes.
+ *       Appends two zero-frames after the last LED to satisfy the >60 us reset.
+ */
 void bsp_ws2812_send(const uint8_t (*color)[3], uint16_t len)
 {
     if (len < 1 || color == NULL)
@@ -201,18 +234,25 @@ void bsp_ws2812_send(const uint8_t (*color)[3], uint16_t len)
     HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 }
 
+/** @brief Control the WS2812 module power pin (PB5). */
 void bsp_ws2812_power_set(bool on)
 {
     HAL_GPIO_WritePin(WS2812_POWER_PORT, WS2812_POWER_PIN,
                       on ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
+/** @brief Control the headlight GPIO (PB0). */
 void bsp_ws2812_headlight_set(bool on)
 {
     HAL_GPIO_WritePin(WS2812_HEADLIGHT_PORT, WS2812_HEADLIGHT_PIN,
                       on ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
+/**
+ * @brief DMA transfer-complete ISR handler.
+ *
+ * Call from DMA1_Stream4_IRQHandler when the LED ring module is active.
+ */
 void bsp_ws2812_dma_isr(void)
 {
     HAL_DMA_IRQHandler(&hdma_tim3_ch1);
@@ -249,7 +289,7 @@ static void ws2812_dma_tc_cb(DMA_HandleTypeDef *hdma)
         }
     }
 
-    /* after 2 extra zero frames the reset period is satisfied */
+    /* After 2 extra zero frames the WS2812 reset period (>60 us low) is satisfied */
     if (current_led >= total_leds + 2) {
         HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
         HAL_DMA_Abort(&hdma_tim3_ch1);

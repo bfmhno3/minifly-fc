@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 #ifndef BSP_WS2812_H
 #define BSP_WS2812_H
 
@@ -9,7 +11,7 @@ extern "C" {
 #endif
 
 /**
- * @file bsp_ws2812.h
+ * @file
  * @brief Board-level WS2812 RGB LED driver using TIM3 CH1 + DMA.
  *
  * Hardware: PB4 (TIM3_CH1), PB5 (power enable), PB0 (headlight).
