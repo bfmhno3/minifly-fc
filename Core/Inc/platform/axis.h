@@ -7,6 +7,13 @@
 extern "C" {
 #endif
 
+enum {
+	AXIS_X = 0,
+	AXIS_Y,
+	AXIS_Z
+};
+#define AXIS_COUNT 3
+
 typedef union {
     struct {
         float x;
