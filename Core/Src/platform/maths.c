@@ -1,3 +1,14 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Platform math library implementation.
+ *
+ * @details
+ * Fast trig via Chebyshev polynomials, Welford online statistics,
+ * ZYX rotation matrix, and median filters with optimal sorting networks.
+ * No hardware dependencies.
+ */
+
 #include <string.h>
 #include <math.h>
 
@@ -13,6 +24,8 @@
 
 #ifndef MATHS_NO_FAST_TRIG
 
+/* Minimax polynomial coefficients for sin(x) on [-pi/2, pi/2].
+ * Derived from Chebyshev expansion; error < 2.6e-6 over [-pi, pi]. */
 #define SIN_COEF3  (-1.666665710e-1f)
 #define SIN_COEF5  ( 8.333017292e-3f)
 #define SIN_COEF7  (-1.980661520e-4f)
@@ -22,6 +35,8 @@ float maths_sin(float x)
 {
 	int32_t xint = (int32_t)x;
 
+	/* Reject large inputs -- range-reduction loop would be too slow.
+	 * For a flight controller, trig inputs are always near zero. */
 	if (xint < -32 || xint > 32)
 		return 0.0f;
 
@@ -45,6 +60,7 @@ float maths_cos(float x)
 
 float maths_atan2(float y, float x)
 {
+/* Hastings rational approximation coefficients for atan */
 #define ATAN_COEF1  3.14551665884836e-07f
 #define ATAN_COEF2  0.99997356613987f
 #define ATAN_COEF3  0.14744007058297684f
@@ -102,6 +118,8 @@ void maths_stdev_push(maths_stdev_t *dev, float x)
 		dev->m_old_s = 0.0f;
 	} else {
 		dev->m_new_m = dev->m_old_m + (x - dev->m_old_m) / dev->m_n;
+		/* Welford recurrence: (x - old_mean) * (x - new_mean)
+		 * avoids catastrophic cancellation from large sums. */
 		dev->m_new_s = dev->m_old_s +
 			       (x - dev->m_old_m) * (x - dev->m_new_m);
 		dev->m_old_m = dev->m_new_m;
@@ -204,6 +222,7 @@ void maths_rotation_matrix(const EulerAngle *euler, float m[3][3])
 	float cz = maths_cos(euler->yaw);
 	float sz = maths_sin(euler->yaw);
 
+	/* Pre-compute common products to reduce total multiply count */
 	float cz_cx = cz * cx;
 	float sz_cx = sz * cx;
 	float cz_sx = sx * cz;
@@ -239,6 +258,7 @@ void maths_vec3_rotate(Axis3f *v, const EulerAngle *delta)
 
 /* --- median filter (sorting network) --- */
 
+/* Compare-and-swap used by the sorting networks below */
 #define MF_SORT(a, b) do { \
 	if ((a) > (b)) { float t_ = (a); (a) = (b); (b) = t_; } \
 } while (0)

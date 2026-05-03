@@ -1,3 +1,13 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Timebase implementation.
+ *
+ * @details
+ * Thin facade over platform_irq_get_tick_ms(), providing a stable time
+ * API that does not expose IRQ-layer internals to upper layers.
+ */
+
 #include "platform/timebase.h"
 #include "platform/platform_irq.h"
 
