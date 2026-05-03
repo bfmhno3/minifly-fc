@@ -52,11 +52,26 @@
 /* Entry Point */
 ENTRY(Reset_Handler)
 
+/*
+ * Flash memory layout (must match Drivers/BSP/Inc/board_memory.h):
+ *
+ *   0x08000000  +------------------------+
+ *               | Bootloader  (16 KB)    |
+ *   0x08004000  +------------------------+
+ *               | Config area (16 KB)    |
+ *   0x08008000  +------------------------+
+ *               | Application (480 KB)   |
+ *   0x08080000  +------------------------+
+ */
+_bootloader_size = 16K;
+_config_size     = 16K;
+_app_offset      = _bootloader_size + _config_size;
+
 /* Specify the memory areas */
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 128K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 512K
+FLASH (rx)      : ORIGIN = 0x08000000 + _app_offset, LENGTH = 512K - _app_offset
 }
 
 /* Highest address of the user mode stack */
