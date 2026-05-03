@@ -1,21 +1,15 @@
 #include "platform/platform_irq.h"
 
+#include "board.h"
 #include "stm32f4xx_hal.h"
 #include "FreeRTOS.h"
 #include "task.h"
-
-/*
- * Firmware base offset for the vector table.
- * Must match the FLASH origin in the linker script.
- * Update this when the bootloader/config area layout changes.
- */
-#define FIRMWARE_BASE_OFFSET 0x0U
 
 static volatile uint32_t irq_tick_cnt;
 
 void platform_irq_init(void)
 {
-    SCB->VTOR = FLASH_BASE | FIRMWARE_BASE_OFFSET;
+    SCB->VTOR = FLASH_BASE | BOARD_FLASH_APP_OFFSET;
     HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 }
 

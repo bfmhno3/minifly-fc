@@ -1,13 +1,12 @@
 #include "services/config_service.h"
 
 #include <string.h>
+#include "board.h"
 #include "bsp_flash.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
 #include "queue.h"
-
-#define CONFIG_PARAM_ADDR (0x08004000UL)
 
 static config_param_t config_param;
 static config_param_t config_param_default;
@@ -106,7 +105,7 @@ static void config_set_defaults(void)
 
 static bool config_load_from_flash(void)
 {
-    if (!bsp_flash_read(CONFIG_PARAM_ADDR, &config_param, sizeof(config_param_t)))
+    if (!bsp_flash_read(BOARD_FLASH_CONFIG_ADDR, &config_param, sizeof(config_param_t)))
     {
         return false;
     }
@@ -126,12 +125,12 @@ static bool config_save_to_flash(void)
 {
     config_param.checksum = config_checksum(&config_param);
 
-    if (!bsp_flash_erase(CONFIG_PARAM_ADDR, sizeof(config_param_t)))
+    if (!bsp_flash_erase(BOARD_FLASH_CONFIG_ADDR, sizeof(config_param_t)))
     {
         return false;
     }
 
-    return bsp_flash_write(CONFIG_PARAM_ADDR, &config_param, sizeof(config_param_t));
+    return bsp_flash_write(BOARD_FLASH_CONFIG_ADDR, &config_param, sizeof(config_param_t));
 }
 
 void config_service_init(void)
