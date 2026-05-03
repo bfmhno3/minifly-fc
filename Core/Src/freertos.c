@@ -25,8 +25,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "app/app_hooks.h"
-#include "app/app_tasks.h"
+#include "app/app_hooks.h"   // FreeRTOS hook callbacks (idle, stack overflow, etc.)
+#include "app/app_tasks.h"   // Application task creation entry point
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -70,17 +70,13 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 void vApplicationIdleHook(void);
 
 /* USER CODE BEGIN 2 */
+/**
+ * @brief  FreeRTOS idle hook - called on every idle task iteration.
+ * @note   Must never block. Delegates to app_idle_hook() for project-specific
+ *         low-priority housekeeping (e.g. power management, watchdog feed).
+ */
 void vApplicationIdleHook( void )
 {
-   /* vApplicationIdleHook() will only be called if configUSE_IDLE_HOOK is set
-   to 1 in FreeRTOSConfig.h. It will be called on each iteration of the idle
-   task. It is essential that code added to this hook function never attempts
-   to block in any way (for example, call xQueueReceive() with a block time
-   specified, or call vTaskDelay()). If the application makes use of the
-   vTaskDelete() API function (as this demo application does) then it is also
-   important that vApplicationIdleHook() is permitted to return to its calling
-   function, because it is the responsibility of the idle task to clean up
-   memory allocated by the kernel to any task that has since been deleted. */
    app_idle_hook();
 }
 /* USER CODE END 2 */
@@ -116,10 +112,12 @@ void MX_FREERTOS_Init(void) {
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-    if (defaultTaskHandle == NULL)
-    {
-        Error_Handler();
-    }
+  // Abort if CubeMX default task creation failed
+  if (defaultTaskHandle == NULL)
+  {
+      Error_Handler();
+  }
+  // Create all application-level tasks (sensors, control, comm, etc.)
   app_tasks_create();
   /* USER CODE END RTOS_THREADS */
 
@@ -141,7 +139,8 @@ void StartDefaultTask(void *argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN StartDefaultTask */
-  /* Infinite loop */
+  // Default task: USB device init is done above; yield here as a placeholder.
+  // Real work runs in app_tasks_create()'s dedicated task threads.
   for(;;)
   {
     osDelay(1);

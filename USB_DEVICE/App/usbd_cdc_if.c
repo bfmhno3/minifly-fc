@@ -128,8 +128,8 @@ static int8_t CDC_Receive_FS(uint8_t* pbuf, uint32_t *Len);
 static int8_t CDC_TransmitCplt_FS(uint8_t *pbuf, uint32_t *Len, uint8_t epnum);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
-extern QueueHandle_t usblink_rx_queue;
-extern SemaphoreHandle_t usblink_tx_done;
+extern QueueHandle_t usblink_rx_queue;    // Byte queue fed to usblink on USB receive
+extern SemaphoreHandle_t usblink_tx_done; // Signaled from TX complete ISR callback
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
 
 /**
@@ -265,6 +265,8 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
+  // Enqueue received bytes one-by-one into the usblink rx queue.
+  // This runs in USB ISR context - uses xQueueSendFromISR for safety.
   if (usblink_rx_queue != NULL) {
     BaseType_t woken = pdFALSE;
     uint32_t i;
@@ -294,6 +296,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
+  // Reject if previous TX is still in flight
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
   if (hcdc->TxState != 0){
     return USBD_BUSY;
@@ -324,6 +327,7 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
   UNUSED(Len);
   UNUSED(epnum);
 
+  // Wake the usblink transmitter so it can send the next packet
   if (usblink_tx_done != NULL) {
     BaseType_t woken = pdFALSE;
     xSemaphoreGiveFromISR(usblink_tx_done, &woken);

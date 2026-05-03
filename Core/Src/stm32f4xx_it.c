@@ -22,8 +22,8 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "modules/module_manager.h"
-#include "bsp_ws2812.h"
+#include "modules/module_manager.h"  // Active module query for shared DMA dispatch
+#include "bsp_ws2812.h"             // WS2812 LED DMA ISR handler
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -87,6 +87,7 @@ void NMI_Handler(void)
   /* USER CODE END NonMaskableInt_IRQn 0 */
   HAL_RCC_NMI_IRQHandler();
   /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
+  // NMI is non-recoverable - halt here for debugger inspection
    while (1)
   {
   }
@@ -249,11 +250,9 @@ void DMA1_Stream3_IRQHandler(void)
 void DMA1_Stream4_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Stream4_IRQn 0 */
-  /*
-   * DMA1_Stream4 is shared between SPI2 TX and WS2812 (TIM3_CH1).
-   * Dispatch exclusively based on the active module to avoid
-   * one handler clearing the other's interrupt flags.
-   */
+  // DMA1_Stream4 is shared between SPI2 TX and WS2812 (TIM3_CH1).
+  // Dispatch based on the active module to avoid one handler
+  // clearing the other's interrupt flags.
   if (module_manager_get_active() == BSP_MODULE_LED_RING) {
       bsp_ws2812_dma_isr();
       return;

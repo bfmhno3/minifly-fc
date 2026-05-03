@@ -107,6 +107,7 @@ int main(void)
   MX_I2C3_Init();
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
+  // Initialize application-level subsystems before the RTOS scheduler starts
   app_boot_init();
   /* USER CODE END 2 */
 
