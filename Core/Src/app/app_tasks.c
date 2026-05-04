@@ -1,3 +1,17 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Application FreeRTOS task creation implementation.
+ *
+ * @details
+ * Uses a table-driven approach: a static array of app_task_definition_t
+ * entries defines each task's name, stack size, priority, and entry
+ * function.  A single loop creates them all via osThreadNew().
+ *
+ * Placeholder entries (configSvc, pmSvc) use app_task_placeholder_entry
+ * until their real implementations are wired up.
+ */
+
 #include "app/app_tasks.h"
 
 #include "main.h"
@@ -9,17 +23,18 @@
 #include "control/stabilizer.h"
 #include "modules/module_manager.h"
 
-#define APP_TASK_STACK_SMALL_BYTES (128U * 4U)
-#define APP_TASK_STACK_MEDIUM_BYTES (192U * 4U)
-#define APP_TASK_STACK_LARGE_BYTES (256U * 4U)
-#define APP_TASK_PLACEHOLDER_DELAY_MS 1000U
+#define APP_TASK_STACK_SMALL_BYTES  (128U * 4U)   /**< 512 bytes */
+#define APP_TASK_STACK_MEDIUM_BYTES (192U * 4U)   /**< 768 bytes */
+#define APP_TASK_STACK_LARGE_BYTES  (256U * 4U)   /**< 1024 bytes */
+#define APP_TASK_PLACEHOLDER_DELAY_MS 1000U       /**< placeholder task sleep interval */
 
+/** @brief  Table entry describing a single FreeRTOS task. */
 typedef struct {
-    osThreadId_t *handle;
-    const char *name;
-    uint32_t stack_size;
-    osPriority_t priority;
-    osThreadFunc_t func;
+    osThreadId_t *handle;       /**< receives the task handle from osThreadNew */
+    const char *name;           /**< task name (max 16 chars for FreeRTOS) */
+    uint32_t stack_size;        /**< stack size in bytes */
+    osPriority_t priority;      /**< CMSIS-RTOS priority */
+    osThreadFunc_t func;        /**< task entry function */
 } app_task_definition_t;
 
 static osThreadId_t radiolink_task_handle;
@@ -33,6 +48,12 @@ static osThreadId_t sensors_task_handle;
 static osThreadId_t stabilizer_task_handle;
 static osThreadId_t module_manager_task_handle;
 
+/**
+ * @brief  Placeholder task entry for services not yet implemented.
+ *
+ * Simply sleeps in a loop.  Replaced with the real entry function
+ * once the service is ready.
+ */
 static void app_task_placeholder_entry(void *argument)
 {
     (void)argument;
