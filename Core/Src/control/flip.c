@@ -1,3 +1,14 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Flip manoeuvre state machine implementation
+ *
+ * @details
+ * Eight-state machine: IDLE -> SET -> SPEED_UP -> SLOW_DOWN -> ROTATE ->
+ * FINISHED -> RECOVERY -> IDLE (or ERROR -> IDLE on timeout).
+ * Uses a trapezoidal angular-rate profile for the 360-degree rotation.
+ */
+
 #include "control/flip.h"
 #include "comm/commander.h"
 #include "services/config_service.h"
@@ -10,18 +21,18 @@
  * angular-rate profile: accelerate to FLIP_MAX_RATE, hold for
  * max_rate_cnt ticks, then decelerate back to zero.
  */
-#define FLIP_RATE              500
-#define FLIP_MID_ANGLE         (180.0f * FLIP_RATE)
-#define FLIP_MAX_RATE          1380
-#define FLIP_DELTA_RATE        (30000.0f / FLIP_MAX_RATE)
+#define FLIP_RATE              500    /* must match stabilizer tick rate */
+#define FLIP_MID_ANGLE         (180.0f * FLIP_RATE) /* halfway angle in rate-ticks */
+#define FLIP_MAX_RATE          1380   /* peak angular rate (rate-ticks per tick) */
+#define FLIP_DELTA_RATE        (30000.0f / FLIP_MAX_RATE) /* accel/decel step per tick */
 
-#define FLIP_TIMEOUT           800
-#define FLIP_SPEED_UP_TIMEOUT  400
-#define FLIP_RECOVERY_TIME     160
+#define FLIP_TIMEOUT           800    /* max ticks for the entire flip */
+#define FLIP_SPEED_UP_TIMEOUT  400    /* max ticks to reach desired climb speed */
+#define FLIP_RECOVERY_TIME     160    /* ticks of thrust recovery after flip */
 
-#define FLIP_MIN_THRUST        28000
-#define FLIP_MIN_VEL_Z         (-20.0f)
-#define FLIP_DESIRED_VEL_Z     105.0f
+#define FLIP_MIN_THRUST        28000  /* minimum thrust to allow flip */
+#define FLIP_MIN_VEL_Z         (-20.0f)  /* max downward velocity to allow flip (cm/s) */
+#define FLIP_DESIRED_VEL_Z     105.0f /* target climb velocity before rotation (cm/s) */
 
 enum flip_state_e {
 	FLIP_STATE_IDLE = 0,

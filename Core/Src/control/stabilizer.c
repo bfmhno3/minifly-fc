@@ -1,3 +1,16 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Main flight control loop orchestrator
+ *
+ * @details
+ * Runs at 500 Hz in a dedicated FreeRTOS task.  Subsystems execute at
+ * their own rates via RATE_DO_EXECUTE macros.  The pipeline order is:
+ * sensor acquire -> attitude est -> optical flow -> position est ->
+ * commander setpoint -> fast adjust -> flip -> anomaly detect ->
+ * PID control -> motor output.
+ */
+
 #include "control/stabilizer.h"
 #include "control/attitude_estimator.h"
 #include "control/position_estimator.h"
@@ -34,6 +47,14 @@ static float target_height;
 static float baro_prev;
 static float baro_vel_lpf;
 
+/**
+ * @brief  Two-phase altitude adjustment: velocity tracking then absolute hold
+ *
+ * Phase 1 (vel_mode_ticks): derives barometer velocity, feeds it as a
+ * velocity-mode setpoint so the PID drives toward zero vertical speed.
+ * Phase 2 (abs_mode_ticks): switches to absolute position hold at the
+ * height captured at the end of phase 1.
+ */
 static void fast_adjust_pos_z(void)
 {
 	if (vel_mode_ticks > 0) {

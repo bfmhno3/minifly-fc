@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  X-quad motor mixer implementation
+ *
+ * @details
+ * Mixes roll/pitch/yaw PID outputs with thrust into four motor channels.
+ * Motor layout (X-configuration, viewed from above):
+ *   M1 (front-left)   M2 (front-right)
+ *   M4 (rear-left)    M3 (rear-right)
+ */
+
 #include "control/power_control.h"
 #include "bsp_motors.h"
 
@@ -36,6 +48,9 @@ void power_control_run(const control_t *ctl)
 	if (override_enabled) {
 		pwm = override_pwm;
 	} else {
+		/* X-quad mixing: each motor gets thrust +/- roll/pitch/yaw.
+		 * Roll/pitch are halved so the sum of corrections stays bounded.
+		 * Adjacent motors get opposite yaw signs for torque reaction. */
 		int32_t r = (int32_t)(ctl->roll / 2);
 		int32_t p = (int32_t)(ctl->pitch / 2);
 		int32_t thrust = (int32_t)ctl->thrust;

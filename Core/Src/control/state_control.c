@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Cascaded PID coordinator implementation
+ *
+ * @details
+ * Orchestrates position -> angle -> rate PID loops at their respective
+ * sub-rates.  When thrust falls below a threshold, all PIDs are reset
+ * and the yaw reference is snapped to the current heading to prevent
+ * integral windup on the ground.
+ */
+
 #include "control/state_control.h"
 #include "control/attitude_pid.h"
 #include "control/position_pid.h"
@@ -5,6 +17,7 @@
 #include <math.h>
 #include <limits.h>
 
+/* Sub-loop rates (Hz) — must divide evenly into the 500 Hz master tick */
 #define POSITION_PID_RATE  250
 #define ANGLE_PID_RATE     250
 #define RATE_PID_RATE      500
@@ -13,8 +26,8 @@
 #define ANGLE_PID_DT       (1.0f / ANGLE_PID_RATE)
 #define RATE_PID_DT        (1.0f / RATE_PID_RATE)
 
-#define THRUST_OFF_THRESHOLD  5.0f
-#define PID_RESET_HOLD_TICKS  1500
+#define THRUST_OFF_THRESHOLD  5.0f   /* below this, motors are considered off */
+#define PID_RESET_HOLD_TICKS  1500   /* ticks before persisting config on ground */
 
 static float actual_thrust;
 static attitude_t att_desired;
@@ -86,6 +99,8 @@ void state_control_run(control_t *out, const sensor_data_t *sensor,
 			att_desired.pitch = sp->attitude.pitch;
 		}
 
+		/* Accumulate yaw rate command into absolute yaw angle.
+		 * Skip during flips so the flip state machine owns yaw. */
 		if (out->flip_dir == FLIP_DIR_CENTER) {
 			att_desired.yaw += sp->attitude.yaw / ANGLE_PID_RATE;
 			wrap_angle_180(&att_desired.yaw);
@@ -116,7 +131,9 @@ void state_control_run(control_t *out, const sensor_data_t *sensor,
 
 	out->thrust = actual_thrust;
 
-	/* low thrust: reset pids and hold */
+	/* Motors off: reset all PID state to prevent integral windup on the
+	 * ground, and snap yaw reference to current heading so the next takeoff
+	 * doesn't chase a stale heading. */
 	if (out->thrust < THRUST_OFF_THRESHOLD) {
 		out->roll = 0;
 		out->pitch = 0;

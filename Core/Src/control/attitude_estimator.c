@@ -1,15 +1,27 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Mahony complementary filter for attitude estimation
+ *
+ * @details
+ * Maintains a unit quaternion updated at 250 Hz.  Gyro drift is corrected
+ * by the gravity vector observed through the accelerometer.  A one-shot
+ * gravity calibration stage runs on startup to learn the static Z-axis
+ * accelerometer bias.
+ */
+
 #include "control/attitude_estimator.h"
 #include <math.h>
 
-#define DEG2RAD 0.017453293f
-#define RAD2DEG 57.29578f
+#define DEG2RAD 0.017453293f  /* pi / 180 */
+#define RAD2DEG 57.29578f    /* 180 / pi */
 
-#define DEFAULT_KP        0.4f
-#define DEFAULT_KI        0.001f
-#define CALIB_SAMPLES     350U
-#define CALIB_THRESHOLD   0.015f
-#define CALIB_Z_MIN_INIT  1.5f
-#define CALIB_Z_MAX_INIT  0.5f
+#define DEFAULT_KP        0.4f    /* proportional gain for gyro correction */
+#define DEFAULT_KI        0.001f  /* integral gain for gyro bias drift */
+#define CALIB_SAMPLES     350U    /* number of samples for gravity calibration */
+#define CALIB_THRESHOLD   0.015f  /* max acc variation (G) to accept calibration */
+#define CALIB_Z_MIN_INIT  1.5f   /* initial high bound for min search (G) */
+#define CALIB_Z_MAX_INIT  0.5f   /* initial low bound for max search (G) */
 
 typedef struct {
 	float q0, q1, q2, q3;
@@ -27,6 +39,12 @@ typedef struct {
 
 static attitude_estimator_t est;
 
+/**
+ * @brief  Rebuild the 3x3 rotation matrix from the current quaternion
+ *
+ * Uses the standard quaternion-to-DCM formula.  Called after every
+ * quaternion update to keep r_mat in sync.
+ */
 static void compute_rotation_matrix(void)
 {
 	float q1q1 = est.q1 * est.q1;
@@ -53,6 +71,15 @@ static void compute_rotation_matrix(void)
 	est.r_mat[2][2] = 1.0f - 2.0f * q1q1 - 2.0f * q2q2;
 }
 
+/**
+ * @brief  Accumulate earth-frame Z acceleration to find the static gravity offset
+ *
+ * Runs for CALIB_SAMPLES iterations.  If the variation between min and max
+ * readings stays below CALIB_THRESHOLD, the mean is accepted as base_acc_z.
+ * Otherwise the window resets and retries.
+ *
+ * @param[in] earth_z  Earth-frame Z-axis acceleration in G
+ */
 static void run_gravity_calibration(float earth_z)
 {
 	est.calib_z_sum += earth_z;
@@ -127,6 +154,7 @@ void attitude_estimator_update(const Axis3f *acc, const Axis3f *gyro, float dt)
 		gyro_rad.z += est.kp * ez + est.ez_int;
 	}
 
+	/* First-order quaternion integration: dq/dt = 0.5 * q * omega */
 	{
 		float half_t = 0.5f * dt;
 		float q0_last = est.q0;

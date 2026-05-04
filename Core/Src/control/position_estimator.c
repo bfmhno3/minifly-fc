@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  INAV-style position and velocity estimator
+ *
+ * @details
+ * Predicts position/velocity from earth-frame acceleration, then corrects
+ * using barometer (Z-axis) and optical flow (XY-axis) measurements.
+ * Accelerometer bias is slowly estimated from the barometer residual.
+ * All distances in cm, velocities in cm/s, accelerations in cm/s^2.
+ */
+
 #include "control/position_estimator.h"
 #include "control/attitude_estimator.h"
 #include "comm/commander.h"
@@ -43,6 +55,7 @@
 
 /* --- helpers --- */
 
+/** @brief  Clamp val to [min, max] */
 static float constrainf(float val, float min, float max)
 {
 	if (val < min)
@@ -52,6 +65,7 @@ static float constrainf(float val, float min, float max)
 	return val;
 }
 
+/** @brief  Return 0 when |val| < deadband, otherwise pass through */
 static float apply_deadband(float val, float deadband)
 {
 	if (fabsf(val) < deadband)
@@ -64,6 +78,7 @@ static float sq(float x)
 	return x * x;
 }
 
+/** @brief  Single-pole IIR low-pass filter step: cur + (sample - cur) * alpha */
 static float lpf_step(float cur, float sample, float alpha)
 {
 	return cur + (sample - cur) * alpha;
@@ -92,12 +107,14 @@ static pos_estimator_t pes;
 
 /* --- INAV filter core --- */
 
+/** @brief  Dead-reckoning prediction: pos += vel*dt + 0.5*acc*dt^2 */
 static void inav_predict(int axis, float dt, float acc)
 {
 	pes.pos[axis] += pes.vel[axis] * dt + acc * dt * dt * 0.5f;
 	pes.vel[axis] += acc * dt;
 }
 
+/** @brief  Position correction: nudges both pos and vel proportionally to position error */
 static void inav_correct_pos(int axis, float dt, float err, float w)
 {
 	float ewdt = err * w * dt;
@@ -105,6 +122,7 @@ static void inav_correct_pos(int axis, float dt, float err, float w)
 	pes.vel[axis] += w * ewdt;
 }
 
+/** @brief  Velocity-only correction (used for optical flow velocity feedback) */
 static void inav_correct_vel(int axis, float dt, float err, float w)
 {
 	pes.vel[axis] += err * w * dt;

@@ -1,10 +1,22 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Implementation of the cascaded attitude PID controllers
+ *
+ * @details
+ * Six independent PID instances: three for the angle (outer) loop and three
+ * for the rate (inner) loop.  Integral windup is clamped per-axis; output
+ * saturation is optional (out_limit == 0 disables it).
+ */
+
 #include "control/attitude_pid.h"
 #include <math.h>
 
-#define ANGLE_I_LIMIT_RP   30.0f
-#define ANGLE_I_LIMIT_YAW  180.0f
-#define RATE_I_LIMIT_RP    500.0f
-#define RATE_I_LIMIT_YAW   50.0f
+/* Integral windup limits (degrees for angle loop, deg/s for rate loop) */
+#define ANGLE_I_LIMIT_RP   30.0f   /* roll/pitch angle I-limit (deg) */
+#define ANGLE_I_LIMIT_YAW  180.0f  /* yaw angle I-limit (deg), wide for continuous heading */
+#define RATE_I_LIMIT_RP    500.0f  /* roll/pitch rate I-limit (deg/s) */
+#define RATE_I_LIMIT_YAW   50.0f   /* yaw rate I-limit (deg/s) */
 
 struct pid_s {
 	float kp;
@@ -24,6 +36,7 @@ static struct pid_s pid_rate_roll;
 static struct pid_s pid_rate_pitch;
 static struct pid_s pid_rate_yaw;
 
+/** @brief  Zero-initialise a PID instance with the given time step */
 static void pid_init(struct pid_s *pid, float dt)
 {
 	pid->kp         = 0.0f;
@@ -36,12 +49,20 @@ static void pid_init(struct pid_s *pid, float dt)
 	pid->dt         = dt;
 }
 
+/** @brief  Clear integral accumulator and previous-error state */
 static void pid_reset(struct pid_s *pid)
 {
 	pid->integ      = 0.0f;
 	pid->prev_error = 0.0f;
 }
 
+/**
+ * @brief  Run one PID update step
+ *
+ * @param[in] pid    PID instance
+ * @param[in] error  Setpoint minus measurement
+ * @return  Control output (clamped to out_limit if non-zero)
+ */
 static float pid_update(struct pid_s *pid, float error)
 {
 	float output;
@@ -131,6 +152,7 @@ void attitude_pid_run_angle(const attitude_t *actual,
 	desired_rate->y = pid_update(&pid_angle_pitch,
 	                             desired->pitch - actual->pitch);
 
+	/* Wrap yaw error to [-180, 180] so the shortest rotation path is chosen */
 	yaw_error = desired->yaw - actual->yaw;
 	if (yaw_error > 180.0f)
 		yaw_error -= 360.0f;

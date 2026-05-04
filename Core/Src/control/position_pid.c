@@ -1,26 +1,42 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Position and velocity PID controller implementation
+ *
+ * @details
+ * Six PID instances (3 position, 3 velocity).  XY velocity output is
+ * scaled to attitude tilt angles; Z velocity output drives raw thrust.
+ * Includes auto hover-thrust calibration during stable hover.
+ */
+
 #include "control/position_pid.h"
 #include "services/config_service.h"
 #include "comm/commander.h"
 #include <math.h>
 
+/* Thrust output clamp (raw motor command range) */
 #define THRUST_MIN                      1000
 #define THRUST_MAX                      60000
 
+/* Velocity PID output limits (cm/s -> attitude deg for XY, raw thrust for Z) */
 #define PID_VX_OUT_LIMIT                120.0f
 #define PID_VY_OUT_LIMIT                120.0f
 #define PID_VZ_OUT_LIMIT                40000
 
+/* Position PID output limits (cm -> cm/s for XY, cm/s for Z) */
 #define PID_X_OUT_LIMIT                 1200.0f
 #define PID_Y_OUT_LIMIT                 1200.0f
 #define PID_Z_OUT_LIMIT                 120.0f
 
+/* Scaling: velocity error (cm/s) -> attitude command (deg) */
 #define VEL_XY_SCALE                    0.15f
+/* Scaling: position error (cm) -> velocity setpoint (cm/s) */
 #define POS_XY_SCALE                    0.1f
 
-#define THRUST_LPF_ALPHA                0.003f
-#define ACC_Z_STILL_THRESHOLD           35.0f
-#define ALT_HOLD_STILL_COUNT            1000
-#define THRUST_BASE_CHANGE_THRESHOLD    1000.0f
+#define THRUST_LPF_ALPHA                0.003f   /* hover thrust LPF coefficient */
+#define ACC_Z_STILL_THRESHOLD           35.0f    /* |acc_z| below this = still (cm/s^2) */
+#define ALT_HOLD_STILL_COUNT            1000     /* ticks of stillness before thrust update */
+#define THRUST_BASE_CHANGE_THRESHOLD    1000.0f  /* min delta to persist new thrust base */
 
 struct pid_s {
 	float kp;
@@ -44,6 +60,7 @@ static float thrust_lpf;
 static uint16_t thrust_base;
 static uint16_t althold_count;
 
+/** @brief  Zero-initialise a PID instance with the given time step */
 static void pid_init(struct pid_s *pid, float dt)
 {
 	pid->kp         = 0.0f;
@@ -56,6 +73,7 @@ static void pid_init(struct pid_s *pid, float dt)
 	pid->dt         = dt;
 }
 
+/** @brief  Clear integral accumulator and previous-error state */
 static void pid_reset(struct pid_s *pid)
 {
 	pid->integ      = 0.0f;
@@ -182,7 +200,9 @@ void position_pid_run(setpoint_t *sp, const state_t *state,
 
 	thrust_lpf += (*thrust_out - thrust_lpf) * THRUST_LPF_ALPHA;
 
-	/* auto thrust-base calibration during stable hover */
+	/* Auto-calibrate thrustBase: when hovering steadily for ALT_HOLD_STILL_COUNT
+	 * ticks, persist the LPF-smoothed thrust as the new baseline so the drone
+	 * adapts to payload or battery changes without manual re-tuning. */
 	if (commander_get_key_flight()) {
 		if (fabsf(state->acc.z) < ACC_Z_STILL_THRESHOLD) {
 			althold_count++;

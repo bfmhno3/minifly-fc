@@ -1,8 +1,25 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Free-fall and tumble detection implementation
+ *
+ * @details
+ * Free-fall: accelerometer magnitude stays below a threshold for
+ * ANOMALY_FF_COUNT consecutive samples.
+ * Tumble: max(|roll|, |pitch|) exceeds threshold for ANOMALY_TUMBLE_COUNT
+ * consecutive samples.
+ * A cooldown period after flips prevents false positives from the
+ * high-angular-rate flip manoeuvre.
+ */
+
 #include "control/anomaly_detect.h"
 #include <math.h>
 
+/* Free-fall: acc magnitude (G^2) below this for FF_COUNT samples */
 #define ANOMALY_FF_THRESHOLD         0.05f
 #define ANOMALY_FF_COUNT             50
+
+/* Tumble: max(|roll|,|pitch|) above this for TUMBLE_COUNT samples */
 #define ANOMALY_TUMBLE_THRESHOLD_DEG 60.0f
 #define ANOMALY_TUMBLE_COUNT         100
 
@@ -10,6 +27,7 @@ static uint16_t ff_cnt;
 static uint16_t tumble_cnt;
 static uint16_t flip_cooldown_cnt;
 
+/** @brief  Detect near-zero acceleration (free-fall) over consecutive samples */
 static bool detect_free_fall(const Axis3f *acc)
 {
 	float acc_mag = acc->x * acc->x + acc->y * acc->y + acc->z * acc->z;
@@ -24,6 +42,7 @@ static bool detect_free_fall(const Axis3f *acc)
 	return false;
 }
 
+/** @brief  Detect excessive roll/pitch angle (tumble) over consecutive samples */
 static bool detect_tumbled(const attitude_t *att)
 {
 	float abs_roll  = fabsf(att->roll);

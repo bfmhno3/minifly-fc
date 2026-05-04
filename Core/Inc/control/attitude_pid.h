@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Cascaded attitude PID controller (angle outer loop + rate inner loop)
+ *
+ * @details
+ * Provides a two-stage PID cascade: the outer loop converts angle error to
+ * a desired angular rate, and the inner loop converts rate error to motor
+ * effort.  Roll and pitch share symmetric limits; yaw uses wider integral
+ * bounds to handle continuous-heading tracking.
+ */
+
 #ifndef CONTROL_ATTITUDE_PID_H
 #define CONTROL_ATTITUDE_PID_H
 
