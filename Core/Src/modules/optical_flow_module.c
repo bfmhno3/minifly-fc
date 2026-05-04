@@ -1,3 +1,20 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  PMW3901 optical flow sensor expansion module implementation.
+ *
+ * @details
+ * Communicates with a PMW3901 optical flow sensor over SPI2.  A dedicated
+ * FreeRTOS task reads motion burst data at 100 Hz.  The public update
+ * function converts raw pixel deltas to velocity/position estimates using
+ * the current height and attitude for compensation.
+ *
+ * Hardware dependencies:
+ * - SPI2 (CubeMX-initialized) for PMW3901 register and burst access.
+ * - NCS on PA8 (shared with MODULE_SHARED_SCL, reconfigured as GPIO output).
+ * - Power on PB0 (shared module power pin).
+ */
+
 #include "modules/optical_flow_module.h"
 #include "control/position_estimator.h"
 #include "platform/axis.h"
@@ -12,23 +29,24 @@
 #include <math.h>
 #include <string.h>
 
-/* PMW3901 optical flow sensor constants */
-#define OPFLOW_RESOLUTION       0.2131946f
-#define OPFLOW_OUTLIER_LIMIT    100
-#define OPFLOW_VEL_LIMIT        150.0f
-#define OPFLOW_LPF_ALPHA        0.15f
-#define OPFLOW_MAX_HEIGHT_M     4.0f
-#define OPFLOW_MIN_HEIGHT_M     0.05f
-#define OPFLOW_INVALID_TIMEOUT  100
-#define OPFLOW_TASK_PERIOD_MS   10
-#define OPFLOW_ATTITUDE_COMP    480.0f
+/* --- PMW3901 optical flow sensor constants --- */
 
-#define DEG2RAD  0.01745329251994f
+#define OPFLOW_RESOLUTION       0.2131946f  /**< pixel-to-cm conversion at 1 m height */
+#define OPFLOW_OUTLIER_LIMIT    100         /**< reject single-frame deltas above this (pixels) */
+#define OPFLOW_VEL_LIMIT        150.0f      /**< velocity clamp, cm/s */
+#define OPFLOW_LPF_ALPHA        0.15f       /**< velocity low-pass filter coefficient */
+#define OPFLOW_MAX_HEIGHT_M     4.0f        /**< sensor operating ceiling, metres */
+#define OPFLOW_MIN_HEIGHT_M     0.05f       /**< sensor operating floor, metres */
+#define OPFLOW_INVALID_TIMEOUT  100         /**< consecutive invalid reads before declaring data stale */
+#define OPFLOW_TASK_PERIOD_MS   10          /**< sampling task period (100 Hz) */
+#define OPFLOW_ATTITUDE_COMP    480.0f      /**< attitude compensation gain (pixels per tan(radian)) */
+
+#define DEG2RAD  0.01745329251994f  /**< degrees to radians */
 
 #define X 0
 #define Y 1
 
-/* NCS pin on PA8, active low */
+/* NCS pin on PA8, active low (shared with MODULE_SHARED_SCL, reconfigured here) */
 #define NCS_PORT  MODULE_SHARED_SCL_GPIO_Port
 #define NCS_PIN   MODULE_SHARED_SCL_Pin
 
@@ -36,7 +54,7 @@
 #define POWER_PORT  MODULE_POWER_GPIO_Port
 #define POWER_PIN   MODULE_POWER_Pin
 
-/* --- motion burst data from PMW3901 --- */
+/* --- motion burst data from PMW3901 (12 bytes on wire) --- */
 
 typedef struct __packed {
     uint8_t motion;
@@ -57,20 +75,23 @@ static bool is_sensor_ok;
 static bool is_data_valid;
 static uint8_t invalid_cnt;
 
-static float pix_sum[2];
-static float pix_comp[2];
-static float pix_valid[2];
-static float pix_valid_last[2];
-static float delta_pos[2];
-static float delta_vel[2];
-static float pos_sum[2];
-static float vel_lpf[2];
+static float pix_sum[2];         /**< accumulated raw pixel motion [x, y] */
+static float pix_comp[2];        /**< attitude compensation offset [x, y] */
+static float pix_valid[2];       /**< compensated pixel position [x, y] */
+static float pix_valid_last[2];  /**< previous compensated position [x, y] */
+static float delta_pos[2];       /**< position delta this step, cm [x, y] */
+static float delta_vel[2];       /**< instantaneous velocity, cm/s [x, y] */
+static float pos_sum[2];         /**< accumulated position, cm [x, y] */
+static float vel_lpf[2];         /**< low-pass filtered velocity, cm/s [x, y] */
 
 static TaskHandle_t task_handle;
 static motion_burst_t current_motion;
 
 /* --- helper functions --- */
 
+/**
+ * @brief  Clamp a float to [min, max].
+ */
 static float constrainf(float val, float min, float max)
 {
     if (val < min)
@@ -98,6 +119,11 @@ static void power_set(bool on)
 
 /* --- PMW3901 SPI register access --- */
 
+/**
+ * @brief  Write a single register on the PMW3901.
+ *
+ * PMW3901 SPI protocol: bit7 of the address byte = 1 for write.
+ */
 static void reg_write(uint8_t reg, uint8_t val)
 {
     uint8_t tx[2];
@@ -111,6 +137,11 @@ static void reg_write(uint8_t reg, uint8_t val)
     ncs_high();
 }
 
+/**
+ * @brief  Read a single register from the PMW3901.
+ *
+ * PMW3901 SPI protocol: bit7 of the address byte = 0 for read.
+ */
 static uint8_t reg_read(uint8_t reg)
 {
     uint8_t tx[2];
@@ -126,6 +157,14 @@ static uint8_t reg_read(uint8_t reg)
     return rx[1];
 }
 
+/**
+ * @brief  Read a 12-byte motion burst from the PMW3901.
+ *
+ * The motion burst register (0x16) returns the latest accumulated motion
+ * data in a single SPI transaction, avoiding the overhead of per-register
+ * reads.  The shutter field arrives big-endian and is swapped to match
+ * the little-endian struct layout.
+ */
 static void motion_burst_read(motion_burst_t *burst)
 {
     uint8_t tx[13];
@@ -148,6 +187,13 @@ static void motion_burst_read(motion_burst_t *burst)
 
 /* --- PMW3901 register initialization --- */
 
+/**
+ * @brief  Write the PMW3901 register initialization sequence.
+ *
+ * These register values are taken from the PMW3901 datasheet and
+ * application note.  They configure the sensor for indoor use on
+ * a typical drone surface (non-glossy, textured).
+ */
 static void pmw3901_init_registers(void)
 {
     reg_write(0x7F, 0x00);
@@ -230,6 +276,9 @@ static void pmw3901_init_registers(void)
 
 /* --- reset pixel accumulators --- */
 
+/**
+ * @brief  Reset all pixel accumulators to zero.
+ */
 static void reset_pixel_data(void)
 {
     for (int i = 0; i < 2; i++) {
@@ -242,6 +291,13 @@ static void reset_pixel_data(void)
 
 /* --- optical flow FreeRTOS task (100Hz) --- */
 
+/**
+ * @brief  FreeRTOS task: reads PMW3901 motion bursts at 100 Hz.
+ *
+ * Accumulates pixel deltas (with outlier rejection) into pix_sum[].
+ * If the sensor returns all-zero data for 100 consecutive reads, the
+ * task suspends itself to avoid wasting CPU on a disconnected sensor.
+ */
 static void optical_flow_task(void *arg)
 {
     (void)arg;
@@ -279,7 +335,7 @@ static void optical_flow_task(void *arg)
     }
 }
 
-/* --- public API --- */
+/* --- public API (Doxygen in .h) --- */
 
 void optical_flow_module_init(void)
 {

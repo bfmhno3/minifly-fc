@@ -1,3 +1,17 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  WS2812 LED ring expansion module implementation.
+ *
+ * @details
+ * Each visual effect is a static function that writes RGB values into a
+ * shared buffer.  A FreeRTOS software timer fires every 50 ms, calls the
+ * active effect function, and pushes the buffer to the WS2812 chain via
+ * bsp_ws2812_send().
+ *
+ * Color ordering throughout this file is GRB (WS2812 native), not RGB.
+ */
+
 #include "modules/ledring_module.h"
 #include "modules/module_manager.h"
 #include "bsp_ws2812.h"
@@ -24,13 +38,14 @@ static TimerHandle_t timer_handle;
 static volatile ledring_effect_t current_effect;
 static volatile ledring_effect_t requested_effect;
 
-/* ---- color palette (GRB order) ---- */
+/* --- color palette (GRB order) --- */
 
 static const uint8_t color_black[3]  = {0,   0,   0};
 static const uint8_t color_blue[3]   = {0,   0,   255};
 
-/* ---- effect: all off ---- */
-
+/**
+ * @brief  Effect: all LEDs off.
+ */
 static void effect_off(uint8_t buf[][3], bool reset)
 {
     (void)reset;
@@ -39,10 +54,10 @@ static void effect_off(uint8_t buf[][3], bool reset)
     headlight_on = false;
 }
 
-/* ---- effect: color test (9 colors cycling) ---- */
+/* --- effect: color test (9 colors cycling) --- */
 
 #define COLOR_TEST_NUM      9
-#define COLOR_TEST_DELAY    10
+#define COLOR_TEST_DELAY    10  /**< ticks between color changes (500 ms at 50 ms/tick) */
 
 static const uint8_t test_palette[COLOR_TEST_NUM][3] = {
     {0,  0,  0},    /* off */
@@ -56,6 +71,9 @@ static const uint8_t test_palette[COLOR_TEST_NUM][3] = {
     {0,  64, 0},    /* red again for visual rhythm */
 };
 
+/**
+ * @brief  Effect: cycles through test_palette, toggles headlight periodically.
+ */
 static void effect_color_test(uint8_t buf[][3], bool reset)
 {
     static uint8_t color_idx;
@@ -87,9 +105,16 @@ static void effect_color_test(uint8_t buf[][3], bool reset)
 
 /* ---- effect: attitude induce (pitch/roll -> LED brightness) ---- */
 
-#define ATT_MIDDLE   10
-#define ATT_LIMIT    20
+#define ATT_MIDDLE   10  /**< baseline brightness at level hover */
+#define ATT_LIMIT    20  /**< clamp angle in degrees */
 
+/**
+ * @brief  Effect: maps pitch/roll to directional LED brightness.
+ *
+ * Front LEDs show pitch (red channel), side LEDs show roll (blue channel).
+ * Squaring with sign preserves direction while giving a non-linear feel
+ * -- small corrections are subtle, large tilts are dramatic.
+ */
 static void effect_attitude(uint8_t buf[][3], bool reset)
 {
     if (reset) {
@@ -131,8 +156,14 @@ static void effect_attitude(uint8_t buf[][3], bool reset)
 
 /* ---- effect: gyro induce (angular rate -> RGB) ---- */
 
-#define GYRO_MAX_RATE  512
+#define GYRO_MAX_RATE  512  /**< clamp gyro reading to this range (deg/s) */
 
+/**
+ * @brief  Effect: maps gyroscope angular rates to RGB channels.
+ *
+ * gz -> R, gy -> G, gx -> B.  Each axis is clamped to +/- GYRO_MAX_RATE
+ * and scaled to 0..255.
+ */
 static void effect_gyro(uint8_t buf[][3], bool reset)
 {
     (void)reset;
@@ -162,6 +193,9 @@ static void effect_gyro(uint8_t buf[][3], bool reset)
 
 /* ---- effect: blue blink ---- */
 
+/**
+ * @brief  Effect: periodic blue blink (50% duty, 1-second period).
+ */
 static void effect_blink(uint8_t buf[][3], bool reset)
 {
     static int tick;
@@ -183,6 +217,9 @@ static void effect_blink(uint8_t buf[][3], bool reset)
 
 /* ---- effect: flashlight (all white) ---- */
 
+/**
+ * @brief  Effect: all LEDs full white, headlight on.
+ */
 static void effect_flashlight(uint8_t buf[][3], bool reset)
 {
     (void)reset;
@@ -194,9 +231,15 @@ static void effect_flashlight(uint8_t buf[][3], bool reset)
 
 /* ---- effect: breathing LED (cycling R/G/B combinations) ---- */
 
-#define BREATH_MAX    30
-#define BREATH_STEP   3.0f
+#define BREATH_MAX    30   /**< peak brightness level */
+#define BREATH_STEP   3.0f /**< brightness increment per tick */
 
+/**
+ * @brief  Effect: breathing ramp cycling through R, G, B channel combinations.
+ *
+ * channel_mask is a 3-bit field (bit0=R, bit1=G, bit2=B).  When the
+ * brightness ramp reaches zero, the mask advances to the next color.
+ */
 static void effect_breathing(uint8_t buf[][3], bool reset)
 {
     static bool dir;
@@ -231,7 +274,7 @@ static void effect_breathing(uint8_t buf[][3], bool reset)
     }
 }
 
-/* ---- effect: red spin (clockwise) ---- */
+/* --- effect: red spin (clockwise) --- */
 
 static const uint8_t red_ring[NBR_LEDS][3] = {
     {0, 128, 0}, {0, 64, 0}, {0, 32, 0},
@@ -240,6 +283,9 @@ static const uint8_t red_ring[NBR_LEDS][3] = {
     {0, 0, 0},   {0, 0, 0},  {0, 0, 0},
 };
 
+/**
+ * @brief  Effect: red gradient spinning clockwise (rotate right by 1 each tick).
+ */
 static void effect_red_spin(uint8_t buf[][3], bool reset)
 {
     if (reset) {
@@ -255,7 +301,7 @@ static void effect_red_spin(uint8_t buf[][3], bool reset)
     COPY_RGB(buf[NBR_LEDS - 1], tmp);
 }
 
-/* ---- effect: color spin (multi-color clockwise) ---- */
+/* --- effect: color spin (multi-color clockwise) --- */
 
 static const uint8_t color_ring[NBR_LEDS][3] = {
     {0, 0, 32},  {0, 0, 16},  {0, 0, 8},
@@ -264,6 +310,9 @@ static const uint8_t color_ring[NBR_LEDS][3] = {
     {0, 8, 0},   {0, 4, 0},   {0, 2, 0},
 };
 
+/**
+ * @brief  Effect: multi-color gradient spinning clockwise.
+ */
 static void effect_color_spin(uint8_t buf[][3], bool reset)
 {
     if (reset) {
@@ -278,8 +327,11 @@ static void effect_color_spin(uint8_t buf[][3], bool reset)
     COPY_RGB(buf[NBR_LEDS - 1], tmp);
 }
 
-/* ---- effect: double spin (two colors counter-rotating, merged) ---- */
+/* --- effect: double spin (two colors counter-rotating, merged) --- */
 
+/**
+ * @brief  Effect: two color gradients counter-rotating, merged by averaging.
+ */
 static void effect_double_spin(uint8_t buf[][3], bool reset)
 {
     static uint8_t sub1[NBR_LEDS][3];
@@ -306,7 +358,7 @@ static void effect_double_spin(uint8_t buf[][3], bool reset)
     }
 }
 
-/* ---- effect function table ---- */
+/* --- effect function table --- */
 
 static const ledring_effect_fn effect_table[LEDRING_EFFECT_COUNT] = {
     [LEDRING_EFFECT_OFF]          = effect_off,
@@ -321,8 +373,15 @@ static const ledring_effect_fn effect_table[LEDRING_EFFECT_COUNT] = {
     [LEDRING_EFFECT_DOUBLE_SPIN]  = effect_double_spin,
 };
 
-/* ---- FreeRTOS software timer callback (50 ms period) ---- */
+/* --- FreeRTOS software timer callback (50 ms period) --- */
 
+/**
+ * @brief  FreeRTOS software timer callback (50 ms period).
+ *
+ * Checks whether the LED ring module is still active (auto-stops if
+ * removed), applies the requested effect change, then pushes the
+ * frame buffer to the WS2812 chain.
+ */
 static void timer_callback(TimerHandle_t timer)
 {
     (void)timer;
@@ -346,7 +405,7 @@ static void timer_callback(TimerHandle_t timer)
     bsp_ws2812_headlight_set(headlight_on);
 }
 
-/* ---- public API ---- */
+/* --- public API --- */
 
 void ledring_module_init(void)
 {
