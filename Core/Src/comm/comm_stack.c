@@ -1,3 +1,14 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Communication stack facade -- init and self-test.
+ *
+ * @details
+ * Brings up the four comm-layer modules in dependency order.
+ * No runtime logic beyond init; the stack is driven by the
+ * per-module FreeRTOS tasks spawned in app_tasks.
+ */
+
 #include "comm/comm_stack.h"
 
 #include "comm/radiolink.h"

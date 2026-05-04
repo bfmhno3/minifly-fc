@@ -1,3 +1,18 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  ATKP protocol definitions -- message IDs, frame format, and commands.
+ *
+ * @details
+ * ATKP (AeroTelemetry Kontrol Protocol) is a binary framing protocol used for
+ * bidirectional communication between the flight controller and a ground station.
+ * Frames use XOR-based checksums and carry a single-byte message ID that
+ * determines the payload layout.
+ *
+ * Up-link (drone -> ground) messages are periodic telemetry; down-link
+ * (ground -> drone) messages carry commands, RC data, and PID tuning.
+ */
+
 #ifndef __ATKP_H
 #define __ATKP_H
 
@@ -8,12 +23,24 @@
 extern "C" {
 #endif
 
+/** @brief Start-of-frame magic byte. */
 #define ATKP_START 0xAA
+
+/** @brief Direction flag: drone-to-ground (up-link). */
 #define ATKP_UP    0xAA
+
+/** @brief Direction flag: ground-to-drone (down-link). */
 #define ATKP_DOWN  0xAF
 
+/** @brief Maximum payload bytes per frame. */
 #define ATKP_FRAME_DATA_MAX 30
 
+/**
+ * @brief  Up-link message IDs (drone -> ground).
+ *
+ * Each ID maps to a fixed-size payload assembled by the periodic telemetry
+ * sender in atkp.c.
+ */
 typedef enum {
 	ATKP_UP_VERSION    = 0x00,
 	ATKP_UP_STATUS     = 0x01,
@@ -48,6 +75,11 @@ typedef enum {
 	ATKP_UP_USER_DATA10 = 0xFA,
 } atkp_up_msg_id_t;
 
+/**
+ * @brief  Down-link message IDs (ground -> drone).
+ *
+ * Carries commands, RC stick values, PID parameters, and radio config.
+ */
 typedef enum {
 	ATKP_DOWN_COMMAND = 0x01,
 	ATKP_DOWN_ACK     = 0x02,
@@ -64,6 +96,10 @@ typedef enum {
 	ATKP_DOWN_REMOTER = 0x50,
 } atkp_down_msg_id_t;
 
+/**
+ * @name Command sub-IDs (payload of ATKP_DOWN_COMMAND)
+ * @{
+ */
 #define ATKP_CMD_ACC_CALIB       0x01
 #define ATKP_CMD_GYRO_CALIB      0x02
 #define ATKP_CMD_MAG_CALIB       0x04
@@ -77,20 +113,65 @@ typedef enum {
 #define ATKP_CMD_ACC_CALIB_STEP6 0x26
 #define ATKP_CMD_FLIGHT_LOCK     0xA0
 #define ATKP_CMD_FLIGHT_ULOCK    0xA1
+/** @} */
 
+/**
+ * @name ACK sub-IDs (payload of ATKP_DOWN_ACK)
+ * @{
+ */
 #define ATKP_ACK_READ_PID     0x01
 #define ATKP_ACK_READ_VERSION 0xA0
 #define ATKP_ACK_RESET_PARAM  0xA1
+/** @} */
 
+/**
+ * @brief  Decoded ATKP frame (header + payload).
+ *
+ * Passed between the transport layer and the application layer.
+ * @c data_len bytes of @c data are valid when received from the queue.
+ */
 typedef struct {
 	uint8_t msg_id;
 	uint8_t data_len;
 	uint8_t data[ATKP_FRAME_DATA_MAX];
 } atkp_frame_t;
 
+/**
+ * @brief  Initialize the ATKP aggregation layer.
+ *
+ * Creates the internal RX queue.  Must be called before any other atkp function.
+ */
 void atkp_init(void);
+
+/**
+ * @brief  FreeRTOS task -- periodic telemetry sender.
+ *
+ * Sends up-link frames at fixed intervals over both radio and USB links.
+ * Runs indefinitely; @c arg is unused.
+ *
+ * @param[in] arg  Unused.
+ */
 void atkp_tx_task(void *arg);
+
+/**
+ * @brief  FreeRTOS task -- dual-link frame receiver.
+ *
+ * Polls radiolink then usblink for received frames and enqueues them
+ * into the internal RX queue.  Radio has priority over USB.
+ * Runs indefinitely; @c arg is unused.
+ *
+ * @param[in] arg  Unused.
+ */
 void atkp_rx_task(void *arg);
+
+/**
+ * @brief  Dequeue one received ATKP frame (non-blocking).
+ *
+ * @param[out] frame  Destination for the dequeued frame.
+ *
+ * @retval true   A frame was dequeued.
+ * @retval false  The RX queue was empty.
+ */
 bool atkp_receive_packet(atkp_frame_t *frame);
 
 #ifdef __cplusplus

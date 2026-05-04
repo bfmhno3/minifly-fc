@@ -1,14 +1,35 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  USB CDC transport implementation.
+ *
+ * @details
+ * RX path: CDC receive callback (ISR) pushes bytes into usblink_rx_queue ->
+ *          usblink_rx_task dequeues and feeds process_byte() -> completed
+ *          frame stored for usblink_get_frame().
+ *
+ * TX path: usblink_send_frame() enqueues into tx_queue -> usblink_tx_task
+ *          assembles ATKP packet and calls CDC_Transmit_FS -> waits on
+ *          usblink_tx_done semaphore signaled by the CDC transfer-complete
+ *          callback.
+ */
+
 #include "comm/usblink.h"
 
 #include "cmsis_os.h"
 #include "usbd_cdc_if.h"
 #include "queue.h"
-#
 
+/** @brief RX byte queue depth. */
 #define USBLINK_RX_QUEUE_BYTES 1024
+
+/** @brief TX frame queue depth. */
 #define USBLINK_TX_QUEUE_FRAMES 30
+
+/** @brief Retry delay when CDC_Transmit_FS returns USBD_BUSY (ms). */
 #define USBLINK_TX_RETRY_MS 1
 
+/** @brief RX frame parser states. */
 enum rx_state {
 	STATE_START1,
 	STATE_START2,
@@ -18,7 +39,11 @@ enum rx_state {
 	STATE_CHKSUM,
 };
 
-/* Handles exposed for CDC ISR bridge in usbd_cdc_if.c */
+/*
+ * Handles exposed for the CDC ISR bridge in usbd_cdc_if.c.
+ * The CDC receive callback pushes raw bytes into usblink_rx_queue;
+ * the transfer-complete callback gives usblink_tx_done.
+ */
 QueueHandle_t usblink_rx_queue;
 SemaphoreHandle_t usblink_tx_done;
 
@@ -36,6 +61,12 @@ static struct {
 	bool is_init;
 } g_usblink;
 
+/**
+ * @brief  Feed one byte into the RX state machine.
+ *
+ * Accepts only ATKP_DOWN direction (ground -> drone).
+ * On checksum match the frame is copied to the output buffer.
+ */
 static void process_byte(uint8_t byte)
 {
 	switch (g_usblink.state) {
@@ -135,6 +166,7 @@ void usblink_tx_task(void *arg)
 		if (len > ATKP_FRAME_DATA_MAX)
 			len = ATKP_FRAME_DATA_MAX;
 
+		/* --- Assemble ATKP frame --- */
 		buf[0] = ATKP_START;
 		buf[1] = ATKP_UP;
 		buf[2] = frame.msg_id;
@@ -143,14 +175,17 @@ void usblink_tx_task(void *arg)
 		for (i = 0; i < len; i++)
 			buf[4 + i] = frame.data[i];
 
+		/* XOR checksum over msg_id, data_len, and payload. */
 		chk = buf[2] ^ buf[3];
 		for (i = 0; i < len; i++)
 			chk ^= frame.data[i];
 		buf[4 + len] = chk;
 
+		/* Retry while the CDC bulk-in endpoint is busy. */
 		while (CDC_Transmit_FS(buf, (uint16_t)(5 + len)) == USBD_BUSY)
 			osDelay(USBLINK_TX_RETRY_MS);
 
+		/* Wait for transfer-complete callback to signal done. */
 		xSemaphoreTake(usblink_tx_done, portMAX_DELAY);
 	}
 }

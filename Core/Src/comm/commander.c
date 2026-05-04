@@ -1,3 +1,12 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief  Command interpreter implementation.
+ *
+ * @details
+ * See commander.h for the public API contract.
+ */
+
 #include "comm/commander.h"
 #include "services/config_service.h"
 
@@ -5,11 +14,23 @@
 #include <string.h>
 #include "cmsis_os.h"
 
+/** @brief Maximum raw thrust value (16-bit). */
 #define THRUST_MAX        65535.0f
+
+/** @brief LPF cutoff frequency (Hz) -- used to derive alpha at design time. */
 #define LPF_FC            30.0f
+
+/** @brief LPF sample period (s) -- 100 Hz task rate. */
 #define LPF_T             0.01f
-/* alpha = 2*pi*30*0.01 ≈ 1.885, clamped to 1.0 */
+
+/**
+ * @brief LPF alpha coefficient.
+ * alpha = 2*pi*fc*T = 2*pi*30*0.01 ~ 1.885, clamped to 1.0
+ * (alpha >= 1.0 means no filtering -- pass-through).
+ */
 #define LPF_ALPHA         1.0f
+
+/** @brief Degrees to radians conversion factor. */
 #define DEG_TO_RAD        (M_PI / 180.0f)
 
 struct commander {
@@ -35,11 +56,22 @@ struct commander {
 
 static struct commander g_cmd;
 
+/**
+ * @brief  First-order IIR low-pass filter step.
+ *
+ * Implements: y[n] = y[n-1] + alpha * (x[n] - y[n-1])
+ */
 static float lpf_step(float state, float input, float alpha)
 {
     return state + alpha * (input - state);
 }
 
+/**
+ * @brief  Rotate roll/pitch commands from body frame to world frame.
+ *
+ * Applies a 2D rotation by -yaw so that "forward" on the stick
+ * always means the same heading in carefree mode.
+ */
 static void rotate_carefree(float *roll, float *pitch, float yaw)
 {
     float r = *roll;
@@ -50,6 +82,12 @@ static void rotate_carefree(float *roll, float *pitch, float yaw)
     *pitch = -r * s + p * c;
 }
 
+/**
+ * @brief  Ramp thrust downward for auto-land.
+ *
+ * Decreases thrust by autolandRampStep each call and switches the
+ * Z-axis mode to velocity so the position controller commands descent.
+ */
 static void auto_land_ramp(float *thrust, mode_t *mode)
 {
     *thrust -= g_cmd.tune.autolandRampStep;
@@ -76,8 +114,10 @@ void commander_cache_ctrl_data(ctrl_src_t src, const ctrl_val_t *val)
     else
         cache = &g_cmd.wifi_cache;
 
+    /* Double-buffer: write to inactive side, then flip. */
     bool inactive = !cache->active_side;
     cache->buf[inactive] = *val;
+    /* Memory fence prevents reordering of the store before the flag flip. */
     asm volatile("" ::: "memory");
     cache->active_side = inactive;
     cache->timestamp = now;
@@ -90,7 +130,7 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
     uint32_t now = xTaskGetTickCount();
     uint32_t dt_ticks = now - g_cmd.last_update_tick;
 
-    /* --- source selection: newest timestamp wins --- */
+    /* --- Source selection: newest timestamp wins --- */
     ctrl_cache_t *src;
     if (g_cmd.remote_cache.timestamp >= g_cmd.wifi_cache.timestamp)
         src = &g_cmd.remote_cache;
@@ -99,11 +139,12 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
 
     ctrl_val_t raw = src->buf[src->active_side];
 
-    /* --- watchdog --- */
+    /* --- Watchdog: degrade control on link loss --- */
     bool wdt_stabilize = (dt_ticks > pdMS_TO_TICKS(COMMANDER_WDT_TIMEOUT_STABILIZE));
     bool wdt_shutdown  = (dt_ticks > pdMS_TO_TICKS(COMMANDER_WDT_TIMEOUT_SHUTDOWN));
 
     if (wdt_shutdown) {
+        /* No data for >1s: zero all axes, start auto-land. */
         raw.roll = 0.0f;
         raw.pitch = 0.0f;
         raw.yaw = 0.0f;
@@ -111,12 +152,13 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
         g_cmd.auto_land_active = true;
         g_cmd.auto_land_thrust = g_cmd.lpf_thrust;
     } else if (wdt_stabilize) {
+        /* No data for >500ms: hold attitude, keep current thrust. */
         raw.roll = 0.0f;
         raw.pitch = 0.0f;
         raw.yaw = 0.0f;
     }
 
-    /* --- LPF --- */
+    /* --- Low-pass filter on all axes --- */
     g_cmd.lpf_roll   = lpf_step(g_cmd.lpf_roll,   raw.roll,        LPF_ALPHA);
     g_cmd.lpf_pitch  = lpf_step(g_cmd.lpf_pitch,  raw.pitch,       LPF_ALPHA);
     g_cmd.lpf_yaw    = lpf_step(g_cmd.lpf_yaw,    raw.yaw,         LPF_ALPHA);
@@ -124,13 +166,13 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
 
     memset(sp, 0, sizeof(*sp));
 
-    /* --- emergency stop --- */
+    /* --- Emergency stop: motors off immediately --- */
     if (g_cmd.bits.emerStop) {
         sp->thrust = 0.0f;
         return;
     }
 
-    /* --- auto-land active --- */
+    /* --- Auto-land active: controlled descent --- */
     if (g_cmd.auto_land_active) {
         auto_land_ramp(&g_cmd.auto_land_thrust, &sp->mode);
         sp->velocity.z = -g_cmd.tune.autolandDescent;
@@ -141,11 +183,11 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
         return;
     }
 
-    /* --- mode dispatch --- */
+    /* --- Mode dispatch: rate / angle / full-assist --- */
     uint8_t ctrl = g_cmd.bits.ctrlMode;
 
     if (ctrl == 0) {
-        /* Manual / rate mode */
+        /* Manual / rate mode -- angular rate command */
         sp->attitudeRate.roll  = g_cmd.lpf_roll  * g_cmd.tune.rateScaleRP;
         sp->attitudeRate.pitch = g_cmd.lpf_pitch * g_cmd.tune.rateScaleRP;
         sp->attitudeRate.yaw   = g_cmd.lpf_yaw   * g_cmd.tune.rateScaleYaw;
@@ -153,7 +195,7 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
         sp->mode.pitch = MODE_VELOCITY;
         sp->mode.yaw   = MODE_VELOCITY;
     } else if (ctrl == 1) {
-        /* Angle mode */
+        /* Angle mode -- absolute angle command */
         float r = g_cmd.lpf_roll  * g_cmd.tune.angleScaleRP;
         float p = g_cmd.lpf_pitch * g_cmd.tune.angleScaleRP;
 
@@ -168,7 +210,7 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
         sp->mode.pitch = MODE_ABS;
         sp->mode.yaw   = MODE_VELOCITY;
     } else {
-        /* Full-assist (ctrl=3): stub — fall through to angle mode */
+        /* Full-assist (ctrl=2): same as angle mode for now */
         float r = g_cmd.lpf_roll  * g_cmd.tune.angleScaleRP;
         float p = g_cmd.lpf_pitch * g_cmd.tune.angleScaleRP;
 
@@ -184,7 +226,7 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
         sp->mode.yaw   = MODE_VELOCITY;
     }
 
-    /* --- one-key takeoff ramp --- */
+    /* --- One-key takeoff ramp --- */
     if (g_cmd.takeoff_active) {
         g_cmd.takeoff_thrust += g_cmd.tune.takeoffRampStep;
         float target = g_cmd.lpf_thrust;
