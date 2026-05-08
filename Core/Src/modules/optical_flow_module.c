@@ -154,7 +154,7 @@ static void reg_write(uint8_t reg, uint8_t val)
  *
  * PMW3901 SPI protocol: bit7 of the address byte = 0 for read.
  */
-static uint8_t reg_read(uint8_t reg)
+static uint8_t __attribute__((unused)) reg_read(uint8_t reg)
 {
   uint8_t tx[2];
   uint8_t rx[2];
