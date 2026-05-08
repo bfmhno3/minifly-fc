@@ -43,8 +43,8 @@ void position_pid_set_gains(const pid_group_pos_t *gains);
  * @param[out]    att_out    Desired pitch/roll from velocity controller
  * @param[out]    thrust_out Thrust command including base hover thrust
  */
-void position_pid_run(setpoint_t *sp, const state_t *state,
-		      attitude_t *att_out, float *thrust_out);
+void position_pid_run(setpoint_t *sp, const state_t *state, attitude_t *att_out,
+                      float *thrust_out);
 
 /** @brief  Get the current smoothed hover thrust estimate (LPF output) */
 float position_pid_get_althold_thrust(void);

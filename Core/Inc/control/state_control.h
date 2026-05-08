@@ -14,6 +14,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "control/flight_types.h"
 #include "services/sensors_types.h"
 
@@ -34,7 +35,7 @@ bool state_control_test(void);
  * @param[in]  tick    Monotonic tick counter for sub-rate scheduling
  */
 void state_control_run(control_t *out, const sensor_data_t *sensor,
-		       const state_t *state, const setpoint_t *sp,
-		       uint32_t tick);
+                       const state_t *state, const setpoint_t *sp,
+                       uint32_t tick);
 
 #endif /* CONTROL_STATE_CONTROL_H */

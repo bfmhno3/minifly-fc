@@ -11,10 +11,11 @@
 
 #include "platform/platform_irq.h"
 
-#include "board.h"
-#include "stm32f4xx_hal.h"
 #include "FreeRTOS.h"
 #include "task.h"
+
+#include "board.h"
+#include "stm32f4xx_hal.h"
 #include "services/sensors.h"
 #include "comm/radiolink.h"
 
@@ -26,17 +27,17 @@ static volatile uint32_t irq_tick_cnt;
 
 void platform_irq_init(void)
 {
-    /* Relocate vector table to app offset -- bootloader occupies the start of flash */
-    SCB->VTOR = FLASH_BASE | BOARD_FLASH_APP_OFFSET;
-    /* Group 4: 4 bits pre-emption, 0 bits sub-priority -- matches FreeRTOS configPRIO_BITS */
-    HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
+  /* Relocate vector table to app offset -- bootloader occupies the start of flash */
+  SCB->VTOR = FLASH_BASE | BOARD_FLASH_APP_OFFSET;
+  /* Group 4: 4 bits pre-emption, 0 bits sub-priority -- matches FreeRTOS configPRIO_BITS */
+  HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 }
 
 uint32_t platform_irq_get_tick_ms(void)
 {
-    if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
-        return xTaskGetTickCount();
-    return irq_tick_cnt;
+  if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
+    return xTaskGetTickCount();
+  return irq_tick_cnt;
 }
 
 /**
@@ -58,6 +59,6 @@ uint32_t platform_irq_get_tick_ms(void)
  */
 void HAL_GPIO_EXTI_Callback(uint16_t pin)
 {
-    sensors_exti_callback(pin);
-    radiolink_exti_callback(pin);
+  sensors_exti_callback(pin);
+  radiolink_exti_callback(pin);
 }

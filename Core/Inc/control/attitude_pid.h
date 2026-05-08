@@ -49,8 +49,7 @@ void attitude_pid_set_rate_gains(const pid_group_t *gains);
  * @param desired      Target attitude (degrees)
  * @param desired_rate Output: desired body angular velocity (deg/s)
  */
-void attitude_pid_run_angle(const attitude_t *actual,
-                            const attitude_t *desired,
+void attitude_pid_run_angle(const attitude_t *actual, const attitude_t *desired,
                             Axis3f *desired_rate);
 
 /**
@@ -60,8 +59,7 @@ void attitude_pid_run_angle(const attitude_t *actual,
  * @param control_out  Output: control effort per axis
  */
 void attitude_pid_run_rate(const Axis3f *actual_rate,
-                           const Axis3f *desired_rate,
-                           Axis3f *control_out);
+                           const Axis3f *desired_rate, Axis3f *control_out);
 
 #ifdef __cplusplus
 }

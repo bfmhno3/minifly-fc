@@ -20,17 +20,19 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "control/flight_types.h"
 
 /**
  * @brief  Optical flow data snapshot returned by optical_flow_module_get_data().
  */
 typedef struct {
-    bool valid;              /**< data is valid and usable */
-    float pos_sum[2];        /**< accumulated position, cm [x, y] */
-    float vel_lpf[2];        /**< filtered velocity, cm/s [x, y] */
-    float laser_range;       /**< laser rangefinder distance, cm (unused if no rangefinder) */
-    float laser_quality;     /**< laser rangefinder quality [0.0, 1.0] */
+  bool valid;       /**< data is valid and usable */
+  float pos_sum[2]; /**< accumulated position, cm [x, y] */
+  float vel_lpf[2]; /**< filtered velocity, cm/s [x, y] */
+  float
+    laser_range; /**< laser rangefinder distance, cm (unused if no rangefinder) */
+  float laser_quality; /**< laser rangefinder quality [0.0, 1.0] */
 } optical_flow_data_t;
 
 /**

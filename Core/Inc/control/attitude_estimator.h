@@ -13,10 +13,11 @@
 #ifndef CONTROL_ATTITUDE_ESTIMATOR_H
 #define CONTROL_ATTITUDE_ESTIMATOR_H
 
-#include "platform/axis.h"
-#include "control/flight_types.h"
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "control/flight_types.h"
+#include "platform/axis.h"
 
 #ifdef __cplusplus
 extern "C" {

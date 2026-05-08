@@ -14,6 +14,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "control/flight_types.h"
 #include "platform/axis.h"
 #include "services/sensors_types.h"
@@ -54,6 +55,6 @@ void stabilizer_get_state(Axis3f *acc, Axis3f *vel, Axis3f *pos);
  * @param[in] height     Target height for the absolute-hold phase (cm)
  */
 void stabilizer_set_fast_adjust(uint16_t vel_ticks, uint16_t abs_ticks,
-				 float height);
+                                float height);
 
 #endif /* CONTROL_STABILIZER_H */

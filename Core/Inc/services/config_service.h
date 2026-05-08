@@ -15,6 +15,7 @@
 #define CONFIG_SERVICE_H
 
 #include <stdbool.h>
+
 #include "config_types.h"
 
 #ifdef __cplusplus
@@ -54,7 +55,7 @@ void config_service_set_flying(bool flying);
  *
  * @return Pointer to config_param_t, or NULL if service is not initialized.
  */
-const config_param_t* config_service_get(void);
+const config_param_t *config_service_get(void);
 
 /**
  * @brief  Get a mutable pointer to the config (caller must call mark_dirty).
@@ -65,7 +66,7 @@ const config_param_t* config_service_get(void);
  *
  * @return Pointer to config_param_t, or NULL if service is not initialized.
  */
-config_param_t* config_service_mut(void);
+config_param_t *config_service_mut(void);
 
 /**
  * @brief  Flag the config as modified and enqueue a flash save.
@@ -90,7 +91,7 @@ void config_service_reset_pid(void);
  *
  * @param[in] arg  Unused.
  */
-void config_service_task(void* arg);
+void config_service_task(void *arg);
 
 #ifdef __cplusplus
 }

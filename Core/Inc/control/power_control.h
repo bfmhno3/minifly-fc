@@ -14,6 +14,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "control/flight_types.h"
 
 #ifdef __cplusplus
@@ -22,10 +23,10 @@ extern "C" {
 
 /** @brief  Per-motor PWM values (raw timer compare units) */
 typedef struct {
-	uint16_t m1;  /**< Front-left motor */
-	uint16_t m2;  /**< Front-right motor */
-	uint16_t m3;  /**< Rear-right motor */
-	uint16_t m4;  /**< Rear-left motor */
+  uint16_t m1; /**< Front-left motor */
+  uint16_t m2; /**< Front-right motor */
+  uint16_t m3; /**< Rear-right motor */
+  uint16_t m4; /**< Rear-left motor */
 } motor_pwm_t;
 
 void power_control_init(void);
@@ -49,9 +50,8 @@ void power_control_get_pwm(motor_pwm_t *out);
  * @param[in] enable  true to activate override, false to return to normal
  * @param[in] m1-m4   Direct PWM values per motor
  */
-void power_control_set_override(bool enable,
-				uint16_t m1, uint16_t m2,
-				uint16_t m3, uint16_t m4);
+void power_control_set_override(bool enable, uint16_t m1, uint16_t m2,
+                                uint16_t m3, uint16_t m4);
 
 #ifdef __cplusplus
 }

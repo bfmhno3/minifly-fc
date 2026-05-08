@@ -19,11 +19,12 @@
 #include "comm/radiolink.h"
 
 #include "cmsis_os.h"
+#include "queue.h"
+#include "semphr.h"
+
 #include "main.h"
 #include "usart.h"
 #include "services/ledseq.h"
-#include "queue.h"
-#include "semphr.h"
 
 /** @brief RX byte queue depth. */
 #define RADIOLINK_RX_QUEUE_BYTES 1024
@@ -41,18 +42,18 @@
 
 /** @brief RX frame parser states. */
 enum rx_state {
-	STATE_START1,
-	STATE_START2,
-	STATE_MSG_ID,
-	STATE_DATA_LEN,
-	STATE_DATA,
-	STATE_CHKSUM,
+  STATE_START1,
+  STATE_START2,
+  STATE_MSG_ID,
+  STATE_DATA_LEN,
+  STATE_DATA,
+  STATE_CHKSUM,
 };
 
 /** @brief TX DMA state. */
 enum {
-	TX_IDLE,
-	TX_BUSY,
+  TX_IDLE,
+  TX_BUSY,
 };
 
 /**
@@ -62,23 +63,23 @@ enum {
  * are clearly identified.
  */
 struct radiolink {
-	QueueHandle_t rx_queue;
-	QueueHandle_t tx_queue;
-	SemaphoreHandle_t tx_done;
-	StaticTask_t task_buf;
-	StackType_t task_stack[128];
+  QueueHandle_t rx_queue;
+  QueueHandle_t tx_queue;
+  SemaphoreHandle_t tx_done;
+  StaticTask_t task_buf;
+  StackType_t task_stack[128];
 
-	enum rx_state state;
-	radio_frame_t rx_frame;
-	uint8_t data_index;
-	uint8_t checksum;
-	uint8_t cmd;
+  enum rx_state state;
+  radio_frame_t rx_frame;
+  uint8_t data_index;
+  uint8_t checksum;
+  uint8_t cmd;
 
-	radio_frame_t output;
-	bool has_frame;
+  radio_frame_t output;
+  bool has_frame;
 
-	volatile uint8_t tx_state;
-	bool is_init;
+  volatile uint8_t tx_state;
+  bool is_init;
 };
 
 static struct radiolink g_rl;
@@ -91,13 +92,13 @@ static struct radiolink g_rl;
 /** @brief Pause USART2 TX DMA -- called when nRF24L01 signals busy (PA0 high). */
 static void nrf_dma_pause(void)
 {
-	DMA1_Stream6->CR &= ~DMA_SXCR_EN;
+  DMA1_Stream6->CR &= ~DMA_SXCR_EN;
 }
 
 /** @brief Resume USART2 TX DMA -- called when nRF24L01 signals ready (PA0 low). */
 static void nrf_dma_resume(void)
 {
-	DMA1_Stream6->CR |= DMA_SXCR_EN;
+  DMA1_Stream6->CR |= DMA_SXCR_EN;
 }
 
 /* --- HAL callbacks (ISR context) --- */
@@ -110,17 +111,17 @@ static void nrf_dma_resume(void)
  */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if (huart->Instance != USART2)
-		return;
+  if (huart->Instance != USART2)
+    return;
 
-	g_rl.tx_state = TX_IDLE;
+  g_rl.tx_state = TX_IDLE;
 
-	BaseType_t woken = pdFALSE;
-	xSemaphoreGiveFromISR(g_rl.tx_done, &woken);
+  BaseType_t woken = pdFALSE;
+  xSemaphoreGiveFromISR(g_rl.tx_done, &woken);
 
-	ledseq_run(LEDSEQ_LED_DATA_TX, LEDSEQ_PATTERN_LINKUP);
+  ledseq_run(LEDSEQ_LED_DATA_TX, LEDSEQ_PATTERN_LINKUP);
 
-	portYIELD_FROM_ISR(woken);
+  portYIELD_FROM_ISR(woken);
 }
 
 /**
@@ -130,17 +131,17 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	static uint8_t byte;
+  static uint8_t byte;
 
-	if (huart->Instance != USART2)
-		return;
+  if (huart->Instance != USART2)
+    return;
 
-	BaseType_t woken = pdFALSE;
-	xQueueSendFromISR(g_rl.rx_queue, &byte, &woken);
+  BaseType_t woken = pdFALSE;
+  xQueueSendFromISR(g_rl.rx_queue, &byte, &woken);
 
-	HAL_UART_Receive_IT(&huart2, &byte, 1);
+  HAL_UART_Receive_IT(&huart2, &byte, 1);
 
-	portYIELD_FROM_ISR(woken);
+  portYIELD_FROM_ISR(woken);
 }
 
 /**
@@ -151,13 +152,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
  */
 void radiolink_exti_callback(uint16_t pin)
 {
-	if (pin != GPIO_PIN_0)
-		return;
+  if (pin != GPIO_PIN_0)
+    return;
 
-	if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET)
-		nrf_dma_pause();
-	else
-		nrf_dma_resume();
+  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET)
+    nrf_dma_pause();
+  else
+    nrf_dma_resume();
 }
 
 /* --- TX path --- */
@@ -172,52 +173,52 @@ void radiolink_exti_callback(uint16_t pin)
  */
 static bool send_frame_dma(void)
 {
-	static uint8_t buf[RADIOLINK_FRAME_DATA_MAX + 5];
-	radio_frame_t frame;
-	uint8_t host_chk;
-	uint8_t len;
-	uint8_t i;
+  static uint8_t buf[RADIOLINK_FRAME_DATA_MAX + 5];
+  radio_frame_t frame;
+  uint8_t host_chk;
+  uint8_t len;
+  uint8_t i;
 
-	if (g_rl.tx_state != TX_IDLE)
-		return false;
+  if (g_rl.tx_state != TX_IDLE)
+    return false;
 
-	/* PA0 high means nRF24L01 cannot accept data. */
-	if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET)
-		return false;
+  /* PA0 high means nRF24L01 cannot accept data. */
+  if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET)
+    return false;
 
-	if (xQueueReceive(g_rl.tx_queue, &frame, 0) != pdTRUE)
-		return false;
+  if (xQueueReceive(g_rl.tx_queue, &frame, 0) != pdTRUE)
+    return false;
 
-	len = frame.data_len;
-	if (len > RADIOLINK_FRAME_DATA_MAX)
-		len = RADIOLINK_FRAME_DATA_MAX;
+  len = frame.data_len;
+  if (len > RADIOLINK_FRAME_DATA_MAX)
+    len = RADIOLINK_FRAME_DATA_MAX;
 
-	/* --- Assemble ATKP frame --- */
-	buf[0] = ATKP_START;
-	buf[1] = ATKP_DOWN;
-	buf[2] = frame.msg_id;
-	buf[3] = len;
+  /* --- Assemble ATKP frame --- */
+  buf[0] = ATKP_START;
+  buf[1] = ATKP_DOWN;
+  buf[2] = frame.msg_id;
+  buf[3] = len;
 
-	for (i = 0; i < len; i++)
-		buf[4 + i] = frame.data[i];
+  for (i = 0; i < len; i++)
+    buf[4 + i] = frame.data[i];
 
-	/* XOR checksum over msg_id, data_len, and payload. */
-	host_chk = buf[2] ^ buf[3];
-	for (i = 0; i < len; i++)
-		host_chk ^= frame.data[i];
-	buf[4 + len] = host_chk;
+  /* XOR checksum over msg_id, data_len, and payload. */
+  host_chk = buf[2] ^ buf[3];
+  for (i = 0; i < len; i++)
+    host_chk ^= frame.data[i];
+  buf[4 + len] = host_chk;
 
-	g_rl.tx_state = TX_BUSY;
+  g_rl.tx_state = TX_BUSY;
 
-	if (HAL_UART_Transmit_DMA(&huart2, buf, 5 + len) != HAL_OK) {
-		g_rl.tx_state = TX_IDLE;
-		return false;
-	}
+  if (HAL_UART_Transmit_DMA(&huart2, buf, 5 + len) != HAL_OK) {
+    g_rl.tx_state = TX_IDLE;
+    return false;
+  }
 
-	/* Block until DMA transfer completes (signaled from ISR). */
-	xSemaphoreTake(g_rl.tx_done, pdMS_TO_TICKS(100));
+  /* Block until DMA transfer completes (signaled from ISR). */
+  xSemaphoreTake(g_rl.tx_done, pdMS_TO_TICKS(100));
 
-	return true;
+  return true;
 }
 
 /* --- RX path: byte-level frame parser --- */
@@ -230,113 +231,114 @@ static bool send_frame_dma(void)
  */
 static void process_byte(uint8_t byte)
 {
-	switch (g_rl.state) {
-	case STATE_START1:
-		if (byte == ATKP_START)
-			g_rl.state = STATE_START2;
-		break;
+  switch (g_rl.state) {
+  case STATE_START1:
+    if (byte == ATKP_START)
+      g_rl.state = STATE_START2;
+    break;
 
-	case STATE_START2:
-		if (byte == ATKP_UP || byte == ATKP_DOWN) {
-			g_rl.cmd = byte;
-			g_rl.state = STATE_MSG_ID;
-		} else if (byte != ATKP_START) {
-			g_rl.state = STATE_START1;
-		}
-		break;
+  case STATE_START2:
+    if (byte == ATKP_UP || byte == ATKP_DOWN) {
+      g_rl.cmd = byte;
+      g_rl.state = STATE_MSG_ID;
+    } else if (byte != ATKP_START) {
+      g_rl.state = STATE_START1;
+    }
+    break;
 
-	case STATE_MSG_ID:
-		g_rl.rx_frame.msg_id = byte;
-		g_rl.checksum = byte;
-		g_rl.state = STATE_DATA_LEN;
-		break;
+  case STATE_MSG_ID:
+    g_rl.rx_frame.msg_id = byte;
+    g_rl.checksum = byte;
+    g_rl.state = STATE_DATA_LEN;
+    break;
 
-	case STATE_DATA_LEN:
-		g_rl.rx_frame.data_len = byte;
-		g_rl.checksum ^= byte;
+  case STATE_DATA_LEN:
+    g_rl.rx_frame.data_len = byte;
+    g_rl.checksum ^= byte;
 
-		if (byte > RADIOLINK_FRAME_DATA_MAX) {
-			g_rl.state = STATE_START1;
-		} else if (byte == 0) {
-			g_rl.state = STATE_CHKSUM;
-		} else {
-			g_rl.data_index = 0;
-			g_rl.state = STATE_DATA;
-		}
-		break;
+    if (byte > RADIOLINK_FRAME_DATA_MAX) {
+      g_rl.state = STATE_START1;
+    } else if (byte == 0) {
+      g_rl.state = STATE_CHKSUM;
+    } else {
+      g_rl.data_index = 0;
+      g_rl.state = STATE_DATA;
+    }
+    break;
 
-	case STATE_DATA:
-		g_rl.rx_frame.data[g_rl.data_index] = byte;
-		g_rl.checksum ^= byte;
-		g_rl.data_index++;
+  case STATE_DATA:
+    g_rl.rx_frame.data[g_rl.data_index] = byte;
+    g_rl.checksum ^= byte;
+    g_rl.data_index++;
 
-		if (g_rl.data_index >= g_rl.rx_frame.data_len)
-			g_rl.state = STATE_CHKSUM;
-		break;
+    if (g_rl.data_index >= g_rl.rx_frame.data_len)
+      g_rl.state = STATE_CHKSUM;
+    break;
 
-	case STATE_CHKSUM:
-		if (byte == g_rl.checksum) {
-			g_rl.output = g_rl.rx_frame;
-			g_rl.has_frame = true;
+  case STATE_CHKSUM:
+    if (byte == g_rl.checksum) {
+      g_rl.output = g_rl.rx_frame;
+      g_rl.has_frame = true;
 
-			ledseq_run(LEDSEQ_LED_DATA_RX, LEDSEQ_PATTERN_LINKUP);
-		}
-		g_rl.state = STATE_START1;
-		break;
-	}
+      ledseq_run(LEDSEQ_LED_DATA_RX, LEDSEQ_PATTERN_LINKUP);
+    }
+    g_rl.state = STATE_START1;
+    break;
+  }
 }
 
 /* --- Public API --- */
 
 void radiolink_init(void)
 {
-	uint8_t byte = 0;
+  uint8_t byte = 0;
 
-	if (g_rl.is_init)
-		return;
+  if (g_rl.is_init)
+    return;
 
-	g_rl.rx_queue = xQueueCreate(RADIOLINK_RX_QUEUE_BYTES, sizeof(uint8_t));
-	g_rl.tx_queue = xQueueCreate(RADIOLINK_TX_QUEUE_FRAMES, sizeof(radio_frame_t));
-	g_rl.tx_done = xSemaphoreCreateBinary();
+  g_rl.rx_queue = xQueueCreate(RADIOLINK_RX_QUEUE_BYTES, sizeof(uint8_t));
+  g_rl.tx_queue =
+    xQueueCreate(RADIOLINK_TX_QUEUE_FRAMES, sizeof(radio_frame_t));
+  g_rl.tx_done = xSemaphoreCreateBinary();
 
-	g_rl.state = STATE_START1;
-	g_rl.has_frame = false;
-	g_rl.tx_state = TX_IDLE;
-	g_rl.is_init = true;
+  g_rl.state = STATE_START1;
+  g_rl.has_frame = false;
+  g_rl.tx_state = TX_IDLE;
+  g_rl.is_init = true;
 
-	/* EXTI0 priority 6: lower than UART ISR (5) but above FreeRTOS tasks. */
-	HAL_NVIC_SetPriority(EXTI0_IRQn, 6, 0);
-	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+  /* EXTI0 priority 6: lower than UART ISR (5) but above FreeRTOS tasks. */
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 6, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
-	HAL_UART_Receive_IT(&huart2, &byte, 1);
+  HAL_UART_Receive_IT(&huart2, &byte, 1);
 }
 
 void radiolink_task(void *arg)
 {
-	uint8_t byte;
+  uint8_t byte;
 
-	(void)arg;
+  (void)arg;
 
-	for (;;) {
-		if (xQueueReceive(g_rl.rx_queue, &byte,
-				  pdMS_TO_TICKS(RADIOLINK_TASK_POLL_MS)) == pdTRUE)
-			process_byte(byte);
-		else
-			send_frame_dma();
-	}
+  for (;;) {
+    if (xQueueReceive(g_rl.rx_queue, &byte,
+                      pdMS_TO_TICKS(RADIOLINK_TASK_POLL_MS)) == pdTRUE)
+      process_byte(byte);
+    else
+      send_frame_dma();
+  }
 }
 
 bool radiolink_send_frame(const radio_frame_t *frame)
 {
-	return xQueueSend(g_rl.tx_queue, frame, 0) == pdTRUE;
+  return xQueueSend(g_rl.tx_queue, frame, 0) == pdTRUE;
 }
 
 bool radiolink_get_frame(radio_frame_t *frame)
 {
-	if (!g_rl.has_frame)
-		return false;
+  if (!g_rl.has_frame)
+    return false;
 
-	*frame = g_rl.output;
-	g_rl.has_frame = false;
-	return true;
+  *frame = g_rl.output;
+  g_rl.has_frame = false;
+  return true;
 }

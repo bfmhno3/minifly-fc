@@ -28,23 +28,23 @@
  */
 static void fault_led_blink(void)
 {
-	bsp_led_toggle(BSP_LED_RED_L);
-	for (volatile uint32_t i = 0; i < FAULT_BLINK_DELAY; i++)
-		__NOP();
+  bsp_led_toggle(BSP_LED_RED_L);
+  for (volatile uint32_t i = 0; i < FAULT_BLINK_DELAY; i++)
+    __NOP();
 }
 
 void platform_fault_init(void)
 {
-	/* Intentionally empty -- reserved for future fault-reporting hooks
+  /* Intentionally empty -- reserved for future fault-reporting hooks
 	 * (e.g., writing fault code to backup register or flash). */
 }
 
 void platform_fault_shutdown(void)
 {
-	bsp_motors_stop_all();
+  bsp_motors_stop_all();
 
-	for (uint8_t i = 0; i < BSP_LED_COUNT; i++)
-		bsp_led_set(i, false);
+  for (uint8_t i = 0; i < BSP_LED_COUNT; i++)
+    bsp_led_set(i, false);
 }
 
 /**
@@ -57,33 +57,34 @@ void platform_fault_shutdown(void)
  */
 void platform_fault_panic(uint32_t code)
 {
-	(void)code; /* Reserved for future use (e.g., blink-pattern encoding by fault type) */
+  (void)
+    code; /* Reserved for future use (e.g., blink-pattern encoding by fault type) */
 
-	__disable_irq();
-	platform_fault_shutdown();
+  __disable_irq();
+  platform_fault_shutdown();
 
-	while (1)
-		fault_led_blink();
+  while (1)
+    fault_led_blink();
 }
 
 /* Cortex-M exception vectors -- invoked by hardware on fault conditions. */
 
 void HardFault_Handler(void)
 {
-	platform_fault_panic(PLATFORM_FAULT_HARD);
+  platform_fault_panic(PLATFORM_FAULT_HARD);
 }
 
 void MemManage_Handler(void)
 {
-	platform_fault_panic(PLATFORM_FAULT_MEM);
+  platform_fault_panic(PLATFORM_FAULT_MEM);
 }
 
 void BusFault_Handler(void)
 {
-	platform_fault_panic(PLATFORM_FAULT_BUS);
+  platform_fault_panic(PLATFORM_FAULT_BUS);
 }
 
 void UsageFault_Handler(void)
 {
-	platform_fault_panic(PLATFORM_FAULT_USAGE);
+  platform_fault_panic(PLATFORM_FAULT_USAGE);
 }

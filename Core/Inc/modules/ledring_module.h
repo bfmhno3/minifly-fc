@@ -28,17 +28,17 @@ extern "C" {
  * @brief  Available LED ring visual effects.
  */
 typedef enum {
-    LEDRING_EFFECT_OFF = 0,        /**< All LEDs off. */
-    LEDRING_EFFECT_COLOR_TEST,     /**< Cycles through a 9-color test palette. */
-    LEDRING_EFFECT_ATTITUDE,       /**< Pitch/roll mapped to LED brightness. */
-    LEDRING_EFFECT_GYRO,           /**< Angular rate mapped to RGB channels. */
-    LEDRING_EFFECT_BLINK,          /**< Periodic blue blink. */
-    LEDRING_EFFECT_FLASHLIGHT,     /**< All LEDs full white. */
-    LEDRING_EFFECT_BREATHING,      /**< Breathing effect cycling R/G/B. */
-    LEDRING_EFFECT_RED_SPIN,       /**< Red gradient spinning clockwise. */
-    LEDRING_EFFECT_COLOR_SPIN,     /**< Multi-color gradient spinning clockwise. */
-    LEDRING_EFFECT_DOUBLE_SPIN,    /**< Two gradients counter-rotating, merged. */
-    LEDRING_EFFECT_COUNT,          /**< Number of effects (sentinel). */
+  LEDRING_EFFECT_OFF = 0,     /**< All LEDs off. */
+  LEDRING_EFFECT_COLOR_TEST,  /**< Cycles through a 9-color test palette. */
+  LEDRING_EFFECT_ATTITUDE,    /**< Pitch/roll mapped to LED brightness. */
+  LEDRING_EFFECT_GYRO,        /**< Angular rate mapped to RGB channels. */
+  LEDRING_EFFECT_BLINK,       /**< Periodic blue blink. */
+  LEDRING_EFFECT_FLASHLIGHT,  /**< All LEDs full white. */
+  LEDRING_EFFECT_BREATHING,   /**< Breathing effect cycling R/G/B. */
+  LEDRING_EFFECT_RED_SPIN,    /**< Red gradient spinning clockwise. */
+  LEDRING_EFFECT_COLOR_SPIN,  /**< Multi-color gradient spinning clockwise. */
+  LEDRING_EFFECT_DOUBLE_SPIN, /**< Two gradients counter-rotating, merged. */
+  LEDRING_EFFECT_COUNT,       /**< Number of effects (sentinel). */
 } ledring_effect_t;
 
 /**

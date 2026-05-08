@@ -24,32 +24,32 @@ extern "C" {
 
 /* --- constants --- */
 
-#define MATHS_PI_F   3.14159265358979323846f
-#define MATHS_E_F    2.71828182845904523536f
-#define MATHS_RAD    (MATHS_PI_F / 180.0f) /* degrees-to-radians multiplier */
+#define MATHS_PI_F 3.14159265358979323846f
+#define MATHS_E_F 2.71828182845904523536f
+#define MATHS_RAD (MATHS_PI_F / 180.0f) /* degrees-to-radians multiplier */
 
 /* --- basic macros --- */
 
 #ifndef SQ
-#define SQ(x)        ((x) * (x))
+#define SQ(x) ((x) * (x))
 #endif
 
 #ifndef MIN
-#define MIN(a, b)    (((a) < (b)) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
 #ifndef MAX
-#define MAX(a, b)    (((a) > (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
 #ifndef ABS
-#define ABS(x)       (((x) < 0) ? (-(x)) : (x))
+#define ABS(x) (((x) < 0) ? (-(x)) : (x))
 #endif
 
 /* --- angle conversion macros --- */
 
-#define DEG_TO_RAD(a)   ((a) * MATHS_RAD)
-#define RAD_TO_DEG(a)   ((a) / MATHS_RAD)
+#define DEG_TO_RAD(a) ((a) * MATHS_RAD)
+#define RAD_TO_DEG(a) ((a) / MATHS_RAD)
 
 /* --- fast trig (order-9 Chebyshev approximation) --- */
 
@@ -60,11 +60,11 @@ float maths_atan2(float y, float x);
 float maths_acos(float x);
 #define maths_tan(x) (maths_sin(x) / maths_cos(x))
 #else
-#define maths_sin(x)       sinf(x)
-#define maths_cos(x)       cosf(x)
-#define maths_atan2(y, x)  atan2f(y, x)
-#define maths_acos(x)      acosf(x)
-#define maths_tan(x)       tanf(x)
+#define maths_sin(x) sinf(x)
+#define maths_cos(x) cosf(x)
+#define maths_atan2(y, x) atan2f(y, x)
+#define maths_acos(x) acosf(x)
+#define maths_tan(x) tanf(x)
 #endif
 
 /* --- running standard deviation (Welford) --- */
@@ -76,18 +76,18 @@ float maths_acos(float x);
  * catastrophic cancellation from large intermediate sums.
  */
 typedef struct {
-	float m_old_m;
-	float m_new_m;
-	float m_old_s;
-	float m_new_s;
-	int m_n;
+  float m_old_m;
+  float m_new_m;
+  float m_old_s;
+  float m_new_s;
+  int m_n;
 } maths_stdev_t;
 
 /** @brief  Reset the accumulator to empty state. */
-void  maths_stdev_clear(maths_stdev_t *dev);
+void maths_stdev_clear(maths_stdev_t *dev);
 
 /** @brief  Add a sample using Welford's recurrence. */
-void  maths_stdev_push(maths_stdev_t *dev, float x);
+void maths_stdev_push(maths_stdev_t *dev, float x);
 
 /** @brief  Return the sample variance (n-1 denominator). Returns 0 if n < 2. */
 float maths_stdev_variance(const maths_stdev_t *dev);
@@ -98,23 +98,22 @@ float maths_stdev_stddev(const maths_stdev_t *dev);
 /* --- constrain --- */
 
 /** @brief  Clamp float to [lo, hi]. */
-float   maths_constrain_f(float val, float lo, float hi);
+float maths_constrain_f(float val, float lo, float hi);
 /** @brief  Clamp int32 to [lo, hi]. */
 int32_t maths_constrain_i(int32_t val, int32_t lo, int32_t hi);
 
 /* --- deadband --- */
 
 /** @brief  Deadband: returns 0 within +/-deadband, offset output outside. */
-float   maths_deadband_f(float val, float deadband);
+float maths_deadband_f(float val, float deadband);
 /** @brief  Integer deadband. */
 int32_t maths_deadband_i(int32_t val, int32_t deadband);
 
 /* --- scale range --- */
 
 /** @brief  Linear interpolation/extrapolation from [src_min, src_max] to [dst_min, dst_max]. */
-float maths_scale_f(float x,
-		    float src_min, float src_max,
-		    float dst_min, float dst_max);
+float maths_scale_f(float x, float src_min, float src_max, float dst_min,
+                    float dst_max);
 
 /* --- angle wrapping (degrees) --- */
 
@@ -132,9 +131,9 @@ float maths_wrap_360(float angle);
  * convention: yaw first, then pitch, then roll.
  */
 typedef struct {
-	float roll;
-	float pitch;
-	float yaw;
+  float roll;
+  float pitch;
+  float yaw;
 } EulerAngle;
 
 /** @brief  Normalize a 3D vector. No-op if length is zero. */

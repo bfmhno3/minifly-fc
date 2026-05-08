@@ -23,17 +23,17 @@
 
 void platform_init(void)
 {
-    /* IRQ and timebase first -- anything that uses delays or timeouts
+  /* IRQ and timebase first -- anything that uses delays or timeouts
      * depends on the tick source being available. */
-    platform_irq_init();
-    platform_timebase_init();
-    platform_fault_init();
-    bsp_led_init();
-    bsp_module_init();
-    bsp_sensors_init();
-    config_service_init();
-    stabilizer_init();
-    module_manager_init();
+  platform_irq_init();
+  platform_timebase_init();
+  platform_fault_init();
+  bsp_led_init();
+  bsp_module_init();
+  bsp_sensors_init();
+  config_service_init();
+  stabilizer_init();
+  module_manager_init();
 }
 
 /**
@@ -43,5 +43,5 @@ void platform_init(void)
  */
 bool platform_self_test(void)
 {
-    return bsp_sensors_is_initialized();
+  return bsp_sensors_is_initialized();
 }

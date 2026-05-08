@@ -23,6 +23,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "control/flight_types.h"
 
 #ifdef __cplusplus
@@ -30,10 +31,10 @@ extern "C" {
 #endif
 
 /** @brief Watchdog: hold position after this many ms without new control data. */
-#define COMMANDER_WDT_TIMEOUT_STABILIZE  500
+#define COMMANDER_WDT_TIMEOUT_STABILIZE 500
 
 /** @brief Watchdog: initiate auto-land after this many ms without new control data. */
-#define COMMANDER_WDT_TIMEOUT_SHUTDOWN   1000
+#define COMMANDER_WDT_TIMEOUT_SHUTDOWN 1000
 
 /**
  * @brief  Bitfield for flight control flags.
@@ -41,24 +42,24 @@ extern "C" {
  * Packed into a single byte for efficient queue transfer.
  */
 typedef struct {
-    uint8_t ctrlMode   : 2; /**< 0=rate, 1=angle, 2=full-assist */
-    uint8_t keyFlight  : 1; /**< 1 = takeoff commanded */
-    uint8_t keyLand    : 1; /**< 1 = land commanded */
-    uint8_t emerStop   : 1; /**< 1 = emergency stop active */
-    uint8_t flightMode : 1; /**< 0=X-mode, 1=carefree */
-    uint8_t reserved   : 2;
+  uint8_t ctrlMode : 2;   /**< 0=rate, 1=angle, 2=full-assist */
+  uint8_t keyFlight : 1;  /**< 1 = takeoff commanded */
+  uint8_t keyLand : 1;    /**< 1 = land commanded */
+  uint8_t emerStop : 1;   /**< 1 = emergency stop active */
+  uint8_t flightMode : 1; /**< 0=X-mode, 1=carefree */
+  uint8_t reserved : 2;
 } commander_bits_t;
 
 /**
  * @brief  Raw control values from one source (remote or WiFi).
  */
 typedef struct {
-    float roll;          /**< Roll stick (-1.0 .. 1.0) */
-    float pitch;         /**< Pitch stick (-1.0 .. 1.0) */
-    float yaw;           /**< Yaw stick (-1.0 .. 1.0) */
-    float trim_pitch;    /**< Pitch trim offset */
-    float trim_roll;     /**< Roll trim offset */
-    uint16_t thrust;     /**< Thrust stick (0 .. 65535) */
+  float roll;       /**< Roll stick (-1.0 .. 1.0) */
+  float pitch;      /**< Pitch stick (-1.0 .. 1.0) */
+  float yaw;        /**< Yaw stick (-1.0 .. 1.0) */
+  float trim_pitch; /**< Pitch trim offset */
+  float trim_roll;  /**< Roll trim offset */
+  uint16_t thrust;  /**< Thrust stick (0 .. 65535) */
 } ctrl_val_t;
 
 /**
@@ -68,27 +69,27 @@ typedef struct {
  * The consumer reads from the active side.
  */
 typedef struct {
-    ctrl_val_t buf[2];
-    volatile bool active_side;
-    uint32_t timestamp;
+  ctrl_val_t buf[2];
+  volatile bool active_side;
+  uint32_t timestamp;
 } ctrl_cache_t;
 
 /** @brief Control data source. */
 typedef enum {
-    CTRL_SRC_REMOTER = 0, /**< nRF24L01 radio link */
-    CTRL_SRC_WIFI    = 1, /**< WiFi module */
+  CTRL_SRC_REMOTER = 0, /**< nRF24L01 radio link */
+  CTRL_SRC_WIFI = 1,    /**< WiFi module */
 } ctrl_src_t;
 
 /** @brief Rate vs. angle mode for roll/pitch. */
 typedef enum {
-    RPY_RATE  = 0, /**< Angular rate command */
-    RPY_ANGLE = 1, /**< Absolute angle command */
+  RPY_RATE = 0,  /**< Angular rate command */
+  RPY_ANGLE = 1, /**< Absolute angle command */
 } rpy_type_t;
 
 /** @brief Yaw reference frame. */
 typedef enum {
-    YAW_XMODE    = 0, /**< Body-frame yaw */
-    YAW_CAREFREE = 1, /**< World-frame yaw (heading hold) */
+  YAW_XMODE = 0,    /**< Body-frame yaw */
+  YAW_CAREFREE = 1, /**< World-frame yaw (heading hold) */
 } yaw_mode_t;
 
 /** @brief  Initialize commander (loads tuning config, zeros state). */

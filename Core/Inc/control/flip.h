@@ -14,6 +14,7 @@
 #define CONTROL_FLIP_H
 
 #include <stdbool.h>
+
 #include "control/flight_types.h"
 
 void flip_init(void);

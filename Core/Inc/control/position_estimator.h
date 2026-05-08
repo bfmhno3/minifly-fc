@@ -13,9 +13,10 @@
 #ifndef CONTROL_POSITION_ESTIMATOR_H
 #define CONTROL_POSITION_ESTIMATOR_H
 
+#include <stdbool.h>
+
 #include "control/flight_types.h"
 #include "services/sensors_types.h"
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,11 +24,11 @@ extern "C" {
 
 /** @brief External sensor data from the optical flow module */
 typedef struct {
-	bool valid;             /**< true when optical flow data is usable */
-	float pos_sum[2];       /**< integrated XY position (cm) */
-	float vel_lpf[2];       /**< filtered XY velocity (cm/s) */
-	float laser_range;      /**< laser ranger distance (cm) */
-	float laser_quality;    /**< laser signal quality [0..1] */
+  bool valid;          /**< true when optical flow data is usable */
+  float pos_sum[2];    /**< integrated XY position (cm) */
+  float vel_lpf[2];    /**< filtered XY velocity (cm/s) */
+  float laser_range;   /**< laser ranger distance (cm) */
+  float laser_quality; /**< laser signal quality [0..1] */
 } pos_estimator_ext_t;
 
 void position_estimator_init(void);
@@ -41,7 +42,7 @@ void position_estimator_init(void);
  * @param[in]  dt     Time step in seconds
  */
 void position_estimator_update(state_t *state, const sensor_data_t *sensor,
-	const pos_estimator_ext_t *ext, float dt);
+                               const pos_estimator_ext_t *ext, float dt);
 
 /** @brief  Request a height-only reset (re-seed from baro + laser) */
 void estimator_reset_height(void);

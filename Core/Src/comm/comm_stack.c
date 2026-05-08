@@ -20,19 +20,19 @@ static bool is_init = false;
 
 void comm_stack_init(void)
 {
-	if (is_init) {
-		return;
-	}
+  if (is_init) {
+    return;
+  }
 
-	radiolink_init();
-	usblink_init();
-	atkp_init();
-	commander_init();
+  radiolink_init();
+  usblink_init();
+  atkp_init();
+  commander_init();
 
-	is_init = true;
+  is_init = true;
 }
 
 bool comm_stack_test(void)
 {
-	return is_init;
+  return is_init;
 }

@@ -19,11 +19,7 @@ extern "C" {
 #endif
 
 /** @brief  Axis indices for array-based access to 3-axis data. */
-enum {
-	AXIS_X = 0,
-	AXIS_Y,
-	AXIS_Z
-};
+enum { AXIS_X = 0, AXIS_Y, AXIS_Z };
 #define AXIS_COUNT 3 /** Number of spatial axes */
 
 /**
@@ -33,12 +29,12 @@ enum {
  * loop-based iteration. Union guarantees layout compatibility.
  */
 typedef union {
-    struct {
-        float x;
-        float y;
-        float z;
-    };
-    float axis[3];
+  struct {
+    float x;
+    float y;
+    float z;
+  };
+  float axis[3];
 } Axis3f;
 
 /**
@@ -47,12 +43,12 @@ typedef union {
  * Same dual-access pattern as Axis3f.
  */
 typedef union {
-    struct {
-        int16_t x;
-        int16_t y;
-        int16_t z;
-    };
-    int16_t axis[3];
+  struct {
+    int16_t x;
+    int16_t y;
+    int16_t z;
+  };
+  int16_t axis[3];
 } Axis3i16;
 
 #ifdef __cplusplus

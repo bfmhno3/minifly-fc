@@ -17,7 +17,7 @@
 
 void app_boot_init(void)
 {
-    bsp_led_init();       /* first: visual feedback for subsequent init */
-    bsp_module_init();    /* module connector ADC and power pin */
-    bsp_sensors_init();   /* IMU, barometer, etc. */
+  bsp_led_init();     /* first: visual feedback for subsequent init */
+  bsp_module_init();  /* module connector ADC and power pin */
+  bsp_sensors_init(); /* IMU, barometer, etc. */
 }

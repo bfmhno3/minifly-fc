@@ -24,29 +24,32 @@ extern "C" {
 
 /** @name Low-voltage thresholds
  * @{ */
-#define PM_BAT_LOW_VOLTAGE_FLY    3.00f  /**< Low-voltage threshold when airborne (V per cell) */
-#define PM_BAT_LOW_VOLTAGE_STATIC 3.60f  /**< Low-voltage threshold when stationary (V per cell) */
-#define PM_BAT_LOW_TIMEOUT_MS     5000   /**< Time below threshold before entering low-power (ms) */
-#define PM_VOLTAGE_INVALID        0.0f   /**< Sentinel: no valid voltage reading yet */
+#define PM_BAT_LOW_VOLTAGE_FLY \
+  3.00f /**< Low-voltage threshold when airborne (V per cell) */
+#define PM_BAT_LOW_VOLTAGE_STATIC \
+  3.60f /**< Low-voltage threshold when stationary (V per cell) */
+#define PM_BAT_LOW_TIMEOUT_MS \
+  5000 /**< Time below threshold before entering low-power (ms) */
+#define PM_VOLTAGE_INVALID 0.0f /**< Sentinel: no valid voltage reading yet */
 /** @} */
 
 /**
  * @brief  Battery status payload received from syslink (packed for wire format).
  */
 typedef struct {
-    uint8_t flags;  /**< Bit 0: power-good, Bit 1: charging active */
-    float vBat;     /**< Battery voltage (V) */
+  uint8_t flags; /**< Bit 0: power-good, Bit 1: charging active */
+  float vBat;    /**< Battery voltage (V) */
 } __attribute__((packed)) pm_syslink_info_t;
 
 /**
  * @brief  Power management state machine states.
  */
 typedef enum {
-    PM_STATE_BATTERY = 0,  /**< Running from battery, normal operation */
-    PM_STATE_CHARGING,     /**< USB connected, actively charging */
-    PM_STATE_CHARGED,      /**< USB connected, charge complete */
-    PM_STATE_LOW_POWER,    /**< Battery critically low */
-    PM_STATE_SHUT_DOWN,    /**< Shutdown imminent (reserved) */
+  PM_STATE_BATTERY = 0, /**< Running from battery, normal operation */
+  PM_STATE_CHARGING,    /**< USB connected, actively charging */
+  PM_STATE_CHARGED,     /**< USB connected, charge complete */
+  PM_STATE_LOW_POWER,   /**< Battery critically low */
+  PM_STATE_SHUT_DOWN,   /**< Shutdown imminent (reserved) */
 } pm_state_t;
 
 /**

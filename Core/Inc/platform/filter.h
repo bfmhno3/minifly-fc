@@ -23,13 +23,13 @@ extern "C" {
  * delay_element_1/2 = filter state (z^-1, z^-2).
  */
 typedef struct {
-    float b0;
-    float b1;
-    float b2;
-    float a1;
-    float a2;
-    float delay_element_1;
-    float delay_element_2;
+  float b0;
+  float b1;
+  float b2;
+  float a1;
+  float a2;
+  float delay_element_1;
+  float delay_element_2;
 } lpf2pData;
 
 /**

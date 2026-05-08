@@ -16,9 +16,10 @@
 #ifndef SERVICES_SENSORS_H
 #define SERVICES_SENSORS_H
 
-#include "services/sensors_types.h"
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "services/sensors_types.h"
 
 #ifdef __cplusplus
 extern "C" {
