@@ -38,12 +38,12 @@
 #define WIFI_TASK_PRIO 4        /**< FreeRTOS task priority */
 #define WIFI_RX_TIMEOUT_MS 1000 /**< UART receive timeout in milliseconds */
 
-enum wifi_rx_state {
+typedef enum wifi_rx_state {
   WIFI_RX_WAIT_START = 0,
   WIFI_RX_WAIT_DATA,
   WIFI_RX_WAIT_CHKSUM,
   WIFI_RX_WAIT_END,
-};
+} wifi_rx_state_t;
 
 static bool is_init;
 static TaskHandle_t task_handle;
@@ -146,7 +146,7 @@ static void wifi_rx_task(void *param)
   uint8_t raw[WIFI_FRAME_LEN];
   uint8_t byte;
   uint8_t data_idx;
-  enum wifi_rx_state state;
+  wifi_rx_state_t state;
 
   for (;;) {
     state = WIFI_RX_WAIT_START;

@@ -42,7 +42,7 @@ float stabilizer_get_baro(void);
 void stabilizer_get_sensor_data(sensor_data_t *out);
 
 /** @brief  Snapshot of acceleration, velocity, and position state */
-void stabilizer_get_state(Axis3f *acc, Axis3f *vel, Axis3f *pos);
+void stabilizer_get_state(axis3f_t *acc, axis3f_t *vel, axis3f_t *pos);
 
 /**
  * @brief  Start a fast position-adjust manoeuvre (velocity then absolute hold)

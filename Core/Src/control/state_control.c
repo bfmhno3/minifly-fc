@@ -33,7 +33,7 @@
 
 static float actual_thrust;
 static attitude_t att_desired;
-static Axis3f rate_desired;
+static axis3f_t rate_desired;
 static uint16_t pid_off_cnt;
 
 static void wrap_angle_180(float *angle)
@@ -76,7 +76,7 @@ void state_control_run(control_t *out, const sensor_data_t *sensor,
                        const state_t *state, const setpoint_t *sp,
                        uint32_t tick)
 {
-  Axis3f control_out = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
+  axis3f_t control_out = { .x = 0.0f, .y = 0.0f, .z = 0.0f };
 
   /* position pid: outer loop at 250 hz */
   if (RATE_DO_EXECUTE(POSITION_PID_RATE, tick)) {
@@ -105,8 +105,8 @@ void state_control_run(control_t *out, const sensor_data_t *sensor,
       wrap_angle_180(&att_desired.yaw);
     }
 
-    att_with_trim.roll = att_desired.roll + config_service_get()->trimR;
-    att_with_trim.pitch = att_desired.pitch + config_service_get()->trimP;
+    att_with_trim.roll = att_desired.roll + config_service_get()->trim_r;
+    att_with_trim.pitch = att_desired.pitch + config_service_get()->trim_p;
     att_with_trim.yaw = att_desired.yaw;
 
     attitude_pid_run_angle(&state->attitude, &att_with_trim, &rate_desired);
@@ -115,9 +115,9 @@ void state_control_run(control_t *out, const sensor_data_t *sensor,
   /* rate pid: inner loop at 500 hz */
   if (RATE_DO_EXECUTE(RATE_PID_RATE, tick)) {
     if (sp->mode.roll == MODE_VELOCITY)
-      rate_desired.x = sp->attitudeRate.roll;
+      rate_desired.x = sp->attitude_rate.roll;
     if (sp->mode.pitch == MODE_VELOCITY)
-      rate_desired.y = sp->attitudeRate.pitch;
+      rate_desired.y = sp->attitude_rate.pitch;
 
     attitude_pid_run_rate(&sensor->gyro, &rate_desired, &control_out);
 

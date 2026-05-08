@@ -29,7 +29,7 @@ static uint16_t tumble_cnt;
 static uint16_t flip_cooldown_cnt;
 
 /** @brief  Detect near-zero acceleration (free-fall) over consecutive samples */
-static bool detect_free_fall(const Axis3f *acc)
+static bool detect_free_fall(const axis3f_t *acc)
 {
   float acc_mag = acc->x * acc->x + acc->y * acc->y + acc->z * acc->z;
 

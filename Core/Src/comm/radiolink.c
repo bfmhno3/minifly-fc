@@ -41,48 +41,55 @@
 #define ATKP_DOWN 0xAF
 
 /** @brief RX frame parser states. */
-enum rx_state {
+typedef enum rx_state {
   STATE_START1,
   STATE_START2,
   STATE_MSG_ID,
   STATE_DATA_LEN,
   STATE_DATA,
   STATE_CHKSUM,
-};
+} rx_state_t;
 
 /** @brief TX DMA state. */
-enum {
+typedef enum tx_state {
   TX_IDLE,
   TX_BUSY,
-};
+} tx_state_t;
 
 /**
- * @brief  Module-global state.
+ * @brief  Runtime context for the radio transport module.
  *
- * Kept in a single struct so the ISR-accessed fields (tx_state, rx_queue)
- * are clearly identified.
+ * @details
+ * Groups queue/semaphore handles, parser scratch state, and TX/RX handoff
+ * buffers into one owner object so task and ISR communication points are
+ * explicit and easy to audit.
+ *
+ * Concurrency model:
+ * - Task context owns parser progression and queue consumption/production.
+ * - ISR context signals RX/TX events through FreeRTOS primitives.
+ * - tx_state is volatile because it is shared across task and ISR contexts.
  */
-struct radiolink {
-  QueueHandle_t rx_queue;
-  QueueHandle_t tx_queue;
-  SemaphoreHandle_t tx_done;
-  StaticTask_t task_buf;
-  StackType_t task_stack[128];
+typedef struct radiolink {
+  QueueHandle_t rx_queue;      // Byte stream from UART RX ISR to parser task.
+  QueueHandle_t tx_queue;      // Outbound frames waiting for DMA transmission.
+  SemaphoreHandle_t tx_done;   // TX-complete signal posted by UART TX ISR.
+  StaticTask_t task_buf;       // Storage for statically created radiolink task.
+  StackType_t task_stack[128]; // Task stack (words), sized for parser+DMA loop.
 
-  enum rx_state state;
-  radio_frame_t rx_frame;
-  uint8_t data_index;
-  uint8_t checksum;
-  uint8_t cmd;
+  rx_state_t state;       // Current state of ATKP byte parser FSM.
+  radio_frame_t rx_frame; // Frame under construction before checksum passes.
+  uint8_t data_index;     // Payload write index while in STATE_DATA
+  uint8_t checksum;       // Running XOR checksum for current frame.
+  uint8_t cmd;            // Direction byte (ATKP_UP/ATKP_DOWN) from header.
 
-  radio_frame_t output;
-  bool has_frame;
+  radio_frame_t output; // Last fully validated frame for public retrieval.
+  bool has_frame;       // Latch indicating output contains unread frame.
 
-  volatile uint8_t tx_state;
-  bool is_init;
-};
+  volatile uint8_t tx_state; // TX_IDLE/TX_BUSY gate shared with TX complete ISR.
+  bool is_init;              // One-time init guard to prevent double setup.
+} radiolink_t;
 
-static struct radiolink g_rl;
+static radiolink_t g_rl;
 
 /* --- nRF24L01 DMA flow control via PA0 / EXTI0 --- */
 

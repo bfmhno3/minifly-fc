@@ -36,7 +36,7 @@ extern "C" {
 /**
  * @brief  Battery status payload received from syslink (packed for wire format).
  */
-typedef struct {
+typedef struct pm_syslink_info {
   uint8_t flags; /**< Bit 0: power-good, Bit 1: charging active */
   float vBat;    /**< Battery voltage (V) */
 } __attribute__((packed)) pm_syslink_info_t;
@@ -44,7 +44,7 @@ typedef struct {
 /**
  * @brief  Power management state machine states.
  */
-typedef enum {
+typedef enum pm_state {
   PM_STATE_BATTERY = 0, /**< Running from battery, normal operation */
   PM_STATE_CHARGING,    /**< USB connected, actively charging */
   PM_STATE_CHARGED,     /**< USB connected, charge complete */

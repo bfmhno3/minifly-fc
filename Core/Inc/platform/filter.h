@@ -19,10 +19,13 @@ extern "C" {
 /**
  * @brief  2nd-order IIR filter state (Direct Form II Transposed).
  *
+ * lpf: low-pass filter
+ * 2p: 2-pole/2nd-order
+ *
  * b0/b1/b2 = numerator coefficients, a1/a2 = denominator coefficients.
  * delay_element_1/2 = filter state (z^-1, z^-2).
  */
-typedef struct {
+typedef struct lpf2p_data {
   float b0;
   float b1;
   float b2;
@@ -30,7 +33,7 @@ typedef struct {
   float a2;
   float delay_element_1;
   float delay_element_2;
-} lpf2pData;
+} lpf2p_data_t;
 
 /**
  * @brief  Initialize filter with given sample and cutoff frequencies.
@@ -39,7 +42,7 @@ typedef struct {
  * @param[in]  sample_freq  Sampling frequency in Hz.
  * @param[in]  cutoff_freq  Cutoff frequency in Hz.
  */
-void lpf2p_init(lpf2pData *lpf, float sample_freq, float cutoff_freq);
+void lpf2p_init(lpf2p_data_t *lpf, float sample_freq, float cutoff_freq);
 
 /**
  * @brief  Apply filter to one sample.
@@ -51,7 +54,7 @@ void lpf2p_init(lpf2pData *lpf, float sample_freq, float cutoff_freq);
  * @note NaN/Inf inputs are bypassed to prevent filter state corruption
  *       (e.g., from I2C bus errors injecting garbage sensor data).
  */
-float lpf2p_apply(lpf2pData *lpf, float sample);
+float lpf2p_apply(lpf2p_data_t *lpf, float sample);
 
 /**
  * @brief  Recompute filter coefficients for a new cutoff frequency.
@@ -63,7 +66,7 @@ float lpf2p_apply(lpf2pData *lpf, float sample);
  * @param[in]  sample_freq  Sampling frequency in Hz.
  * @param[in]  cutoff_freq  New cutoff frequency in Hz.
  */
-void lpf2p_set_cutoff(lpf2pData *lpf, float sample_freq, float cutoff_freq);
+void lpf2p_set_cutoff(lpf2p_data_t *lpf, float sample_freq, float cutoff_freq);
 
 #ifdef __cplusplus
 }

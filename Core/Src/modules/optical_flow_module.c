@@ -61,7 +61,15 @@
 
 /* --- motion burst data from PMW3901 (12 bytes on wire) --- */
 
-typedef struct __packed {
+/**
+ * @brief  PMW3901 motion burst payload mapped to the 12-byte SPI response.
+ *
+ * @details
+ * Field order must match the sensor's burst register layout exactly.
+ * The packed attribute prevents padding so the buffer can be copied
+ * directly from the SPI receive frame.
+ */
+typedef struct motion_burst {
   uint8_t motion;
   uint8_t observation;
   int16_t delta_x;
@@ -71,7 +79,7 @@ typedef struct __packed {
   uint8_t max_raw_data;
   uint8_t min_raw_data;
   uint16_t shutter;
-} motion_burst_t;
+}  __attribute__((packed)) motion_burst_t;
 
 /* --- module internal state --- */
 

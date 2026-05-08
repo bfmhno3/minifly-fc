@@ -38,7 +38,7 @@
 #define FLIP_DESIRED_VEL_Z \
   105.0f /* target climb velocity before rotation (cm/s) */
 
-enum flip_state_e {
+typedef enum flip_state {
   FLIP_STATE_IDLE = 0,
   FLIP_STATE_SET,
   FLIP_STATE_SPEED_UP,
@@ -47,9 +47,9 @@ enum flip_state_e {
   FLIP_STATE_FINISHED,
   FLIP_STATE_RECOVERY,
   FLIP_STATE_ERROR,
-};
+} flip_state_t;
 
-static enum flip_state_e flip_state;
+static flip_state_t flip_state;
 static flip_dir_e flip_dir;
 
 static float current_rate;
@@ -129,10 +129,10 @@ static void state_set(const state_t *state)
   max_rate_cnt = 0;
   timeout_cnt = 0;
 
-  flip_thrust_base = (uint16_t)(-9000.0f + 1.2f * cfg->thrustBase);
-  delta_thrust = cfg->thrustBase / 90.0f;
+  flip_thrust_base = (uint16_t)(-9000.0f + 1.2f * cfg->thrust_base);
+  delta_thrust = cfg->thrust_base / 90.0f;
 
-  flip_thrust_max = cfg->thrustBase + 20000;
+  flip_thrust_max = cfg->thrust_base + 20000;
   if (flip_thrust_max > 62000)
     flip_thrust_max = 62000;
 

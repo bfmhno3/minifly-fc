@@ -18,7 +18,7 @@
 /**
  * @brief  Module manager state (unused externally, reserved for diagnostics).
  */
-typedef enum {
+typedef enum module_mgr_state {
   MODULE_MGR_STATE_IDLE = 0,  /**< No module detected. */
   MODULE_MGR_STATE_DETECTING, /**< Debounce in progress. */
   MODULE_MGR_STATE_ACTIVE,    /**< Module confirmed and running. */

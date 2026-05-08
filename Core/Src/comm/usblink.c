@@ -32,14 +32,14 @@
 #define USBLINK_TX_RETRY_MS 1
 
 /** @brief RX frame parser states. */
-enum rx_state {
+typedef enum rx_state {
   STATE_START1,
   STATE_START2,
   STATE_MSG_ID,
   STATE_DATA_LEN,
   STATE_DATA,
   STATE_CHKSUM,
-};
+} rx_state_t;
 
 /*
  * Handles exposed for the CDC ISR bridge in usbd_cdc_if.c.
@@ -49,19 +49,29 @@ enum rx_state {
 QueueHandle_t usblink_rx_queue;
 SemaphoreHandle_t usblink_tx_done;
 
-static struct {
-  QueueHandle_t tx_queue;
+/**
+ * @brief Internal runtime state for the USB CDC link module.
+ *
+ * @details
+ * Owns RX parser progress, TX queue handle, and the single completed RX frame
+ * buffer exposed by usblink_get_frame(). This state is intentionally module-
+ * private and is accessed from the USB link tasks/callback flow only.
+ */
+typedef struct usblink {
+  QueueHandle_t tx_queue; // Outbound ATKP frame queue consumed by TX task.
 
-  enum rx_state state;
-  atkp_frame_t rx_frame;
-  uint8_t data_index;
-  uint8_t checksum;
+  rx_state_t state;      // Current byte-level RX parser state.
+  atkp_frame_t rx_frame; // Frame under construction while parsing RX bytes.
+  uint8_t data_index;    // Current payload write index in rx_frame.data[].
+  uint8_t checksum;      // Running XOR checksum for the current RX frame.
 
-  atkp_frame_t output;
-  bool has_frame;
+  atkp_frame_t output; // Last validated RX frame published to consumers.
+  bool has_frame;      // True when output contains an unread frame.
 
-  bool is_init;
-} g_usblink;
+  bool is_init; // One-time init guard for queue/semaphore setup.
+} usblink_t;
+
+static usblink_t g_usblink;
 
 /**
  * @brief  Feed one byte into the RX state machine.

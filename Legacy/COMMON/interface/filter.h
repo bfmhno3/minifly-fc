@@ -3,15 +3,15 @@
 #include <stdint.h>
 
 /********************************************************************************	 
- * ±¾³ÌÐòÖ»¹©Ñ§Ï°Ê¹ÓÃ£¬Î´¾­×÷ÕßÐí¿É£¬²»µÃÓÃÓÚÆäËüÈÎºÎÓÃÍ¾
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½Ñ§Ï°Ê¹ï¿½Ã£ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îºï¿½ï¿½ï¿½Í¾
  * ALIENTEK MiniFly
- * ÂË²¨¹¦ÄÜº¯Êý	
- * ÕýµãÔ­×Ó@ALIENTEK
- * ¼¼ÊõÂÛÌ³:www.openedv.com
- * ´´½¨ÈÕÆÚ:2017/5/12
- * °æ±¾£ºV1.3
- * °æÈ¨ËùÓÐ£¬µÁ°æ±Ø¾¿¡£
- * Copyright(C) ¹ãÖÝÊÐÐÇÒíµç×Ó¿Æ¼¼ÓÐÏÞ¹«Ë¾ 2014-2024
+ * ï¿½Ë²ï¿½ï¿½ï¿½ï¿½Üºï¿½ï¿½ï¿½	
+ * ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½@ALIENTEK
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì³:www.openedv.com
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½:2017/5/12
+ * ï¿½æ±¾ï¿½ï¿½V1.3
+ * ï¿½ï¿½È¨ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½Ø¾ï¿½ï¿½ï¿½
+ * Copyright(C) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¿Æ¼ï¿½ï¿½ï¿½ï¿½Þ¹ï¿½Ë¾ 2014-2024
  * All rights reserved
 ********************************************************************************/
 
@@ -28,12 +28,12 @@ typedef struct
 	float b2;
 	float delay_element_1;
 	float delay_element_2;
-} lpf2pData;
+} lpf2p_data;
 
-void lpf2pInit(lpf2pData* lpfData, float sample_freq, float cutoff_freq);
-void lpf2pSetCutoffFreq(lpf2pData* lpfData, float sample_freq, float cutoff_freq);
-float lpf2pApply(lpf2pData* lpfData, float sample);
-float lpf2pReset(lpf2pData* lpfData, float sample);
+void lpf2pInit(lpf2p_data* lpfData, float sample_freq, float cutoff_freq);
+void lpf2pSetCutoffFreq(lpf2p_data* lpfData, float sample_freq, float cutoff_freq);
+float lpf2pApply(lpf2p_data* lpfData, float sample);
+float lpf2pReset(lpf2p_data* lpfData, float sample);
 
 
 #endif //__FILTER_H

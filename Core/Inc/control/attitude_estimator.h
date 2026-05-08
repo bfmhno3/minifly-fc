@@ -32,7 +32,7 @@ void attitude_estimator_init(void);
  * @param[in] gyro Gyroscope reading, body frame (deg/s)
  * @param[in] dt   Time step in seconds (typically 0.004 for 250 Hz)
  */
-void attitude_estimator_update(const Axis3f *acc, const Axis3f *gyro, float dt);
+void attitude_estimator_update(const axis3f_t *acc, const axis3f_t *gyro, float dt);
 
 /**
  * @brief  Get the latest attitude estimate
@@ -56,13 +56,13 @@ bool attitude_estimator_is_calibrated(void);
  * @brief  Transform a vector from body frame to earth frame
  * @param[in,out] v Overwritten with earth-frame result
  */
-void attitude_estimator_body_to_earth(Axis3f *v);
+void attitude_estimator_body_to_earth(axis3f_t *v);
 
 /**
  * @brief  Transform a vector from earth frame to body frame
  * @param[in,out] v Overwritten with body-frame result
  */
-void attitude_estimator_earth_to_body(Axis3f *v);
+void attitude_estimator_earth_to_body(axis3f_t *v);
 
 #ifdef __cplusplus
 }

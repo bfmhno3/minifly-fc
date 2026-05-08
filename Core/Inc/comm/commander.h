@@ -41,19 +41,19 @@ extern "C" {
  *
  * Packed into a single byte for efficient queue transfer.
  */
-typedef struct {
-  uint8_t ctrlMode : 2;   /**< 0=rate, 1=angle, 2=full-assist */
-  uint8_t keyFlight : 1;  /**< 1 = takeoff commanded */
-  uint8_t keyLand : 1;    /**< 1 = land commanded */
-  uint8_t emerStop : 1;   /**< 1 = emergency stop active */
-  uint8_t flightMode : 1; /**< 0=X-mode, 1=carefree */
+typedef struct commander_bits {
+  uint8_t ctrl_mode : 2;   /**< 0=rate, 1=angle, 2=full-assist */
+  uint8_t key_flight : 1;  /**< 1 = takeoff commanded */
+  uint8_t key_land : 1;    /**< 1 = land commanded */
+  uint8_t emer_stop : 1;   /**< 1 = emergency stop active */
+  uint8_t flight_mode : 1; /**< 0=X-mode, 1=carefree */
   uint8_t reserved : 2;
 } commander_bits_t;
 
 /**
  * @brief  Raw control values from one source (remote or WiFi).
  */
-typedef struct {
+typedef struct ctrl_val {
   float roll;       /**< Roll stick (-1.0 .. 1.0) */
   float pitch;      /**< Pitch stick (-1.0 .. 1.0) */
   float yaw;        /**< Yaw stick (-1.0 .. 1.0) */
@@ -68,26 +68,26 @@ typedef struct {
  * The producer writes to the inactive side then flips active_side.
  * The consumer reads from the active side.
  */
-typedef struct {
+typedef struct ctrl_cache {
   ctrl_val_t buf[2];
   volatile bool active_side;
   uint32_t timestamp;
 } ctrl_cache_t;
 
 /** @brief Control data source. */
-typedef enum {
+typedef enum ctrl_src {
   CTRL_SRC_REMOTER = 0, /**< nRF24L01 radio link */
   CTRL_SRC_WIFI = 1,    /**< WiFi module */
 } ctrl_src_t;
 
 /** @brief Rate vs. angle mode for roll/pitch. */
-typedef enum {
+typedef enum rpy_type {
   RPY_RATE = 0,  /**< Angular rate command */
   RPY_ANGLE = 1, /**< Absolute angle command */
 } rpy_type_t;
 
 /** @brief Yaw reference frame. */
-typedef enum {
+typedef enum yaw_mode {
   YAW_XMODE = 0,    /**< Body-frame yaw */
   YAW_CAREFREE = 1, /**< World-frame yaw (heading hold) */
 } yaw_mode_t;

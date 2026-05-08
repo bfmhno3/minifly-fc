@@ -35,15 +35,15 @@ extern "C" {
 /**
  * @brief  A single step in an LED animation sequence.
  */
-struct ledseq_step {
+typedef struct ledseq_step {
   bool value; /**< LED on (true) or off (false) */
   int action; /**< LEDSEQ_WAIT_MS(n), LEDSEQ_STOP, or LEDSEQ_LOOP */
-};
+} ledseq_step_t;
 
 /**
  * @brief  Available LED blink patterns, ordered by priority (lowest index = highest priority).
  */
-enum ledseq_pattern {
+typedef enum ledseq_pattern {
   LEDSEQ_PATTERN_LOWBAT = 0, /**< Low battery warning */
   LEDSEQ_PATTERN_CHARGED,    /**< Charge complete */
   LEDSEQ_PATTERN_CHARGING,   /**< Actively charging */
@@ -51,7 +51,7 @@ enum ledseq_pattern {
   LEDSEQ_PATTERN_ALIVE,      /**< Heartbeat indicator */
   LEDSEQ_PATTERN_LINKUP,     /**< Communication link established */
   LEDSEQ_PATTERN_COUNT       /**< Number of patterns (sentinel) */
-};
+} ledseq_pattern_t;
 
 /** @name LED-to-pattern mapping
  * @{ */

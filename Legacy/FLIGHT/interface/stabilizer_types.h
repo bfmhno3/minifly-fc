@@ -5,15 +5,15 @@
 #include "sensors_types.h"
 
 /********************************************************************************	 
- * ±¾³ÌÐòÖ»¹©Ñ§Ï°Ê¹ÓÃ£¬Î´¾­×÷ÕßÐí¿É£¬²»µÃÓÃÓÚÆäËüÈÎºÎÓÃÍ¾
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½Ñ§Ï°Ê¹ï¿½Ã£ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îºï¿½ï¿½ï¿½Í¾
  * ALIENTEK MiniFly
- * ½á¹¹ÌåÀàÐÍ¶¨Òå	
- * ÕýµãÔ­×Ó@ALIENTEK
- * ¼¼ÊõÂÛÌ³:www.openedv.com
- * ´´½¨ÈÕÆÚ:2017/5/12
- * °æ±¾£ºV1.3
- * °æÈ¨ËùÓÐ£¬µÁ°æ±Ø¾¿¡£
- * Copyright(C) ¹ãÖÝÊÐÐÇÒíµç×Ó¿Æ¼¼ÓÐÏÞ¹«Ë¾ 2014-2024
+ * ï¿½á¹¹ï¿½ï¿½ï¿½ï¿½ï¿½Í¶ï¿½ï¿½ï¿½	
+ * ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½@ALIENTEK
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì³:www.openedv.com
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½:2017/5/12
+ * ï¿½æ±¾ï¿½ï¿½V1.3
+ * ï¿½ï¿½È¨ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½Ø¾ï¿½ï¿½ï¿½
+ * Copyright(C) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¿Æ¼ï¿½ï¿½ï¿½ï¿½Þ¹ï¿½Ë¾ 2014-2024
  * All rights reserved
 ********************************************************************************/
 
@@ -23,7 +23,7 @@
 
 typedef struct  
 {
-	u32 timestamp;	/*Ê±¼ä´Á*/
+	u32 timestamp;	/*Ê±ï¿½ï¿½ï¿½*/
 
 	float roll;
 	float pitch;
@@ -32,7 +32,7 @@ typedef struct
 
 struct  vec3_s 
 {
-	u32 timestamp;	/*Ê±¼ä´Á*/
+	u32 timestamp;	/*Ê±ï¿½ï¿½ï¿½*/
 
 	float x;
 	float y;
@@ -113,9 +113,9 @@ typedef struct distanceMeasurement_s
 
 typedef struct zRange_s 
 {
-	uint32_t timestamp;	//Ê±¼ä´Á
-	float distance;		//²âÁ¿¾àÀë
-	float quality;		//¿ÉÐÅ¶È
+	uint32_t timestamp;	//Ê±ï¿½ï¿½ï¿½
+	float distance;		//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	float quality;		//ï¿½ï¿½ï¿½Å¶ï¿½
 } zRange_t;
 
 /** Flow measurement**/
@@ -187,14 +187,14 @@ typedef struct
 	s16 pitch;
 	s16 yaw;
 	float thrust;
-	enum dir_e flipDir;		/*·­¹ö·½Ïò*/
+	enum dir_e flipDir;		/*ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½*/
 } control_t;
 
 typedef enum
 {
-	modeDisable = 0,/*¹Ø±ÕÄ£Ê½*/
-	modeAbs,		/*¾ø¶ÔÖµÄ£Ê½*/
-	modeVelocity	/*ËÙÂÊÄ£Ê½*/
+	modeDisable = 0,/*ï¿½Ø±ï¿½Ä£Ê½*/
+	modeAbs,		/*ï¿½ï¿½ï¿½ï¿½ÖµÄ£Ê½*/
+	modeVelocity	/*ï¿½ï¿½ï¿½ï¿½Ä£Ê½*/
 } mode_e;
 
 typedef struct
@@ -205,7 +205,7 @@ typedef struct
 	mode_e roll;
 	mode_e pitch;
 	mode_e yaw;
-}mode_t;
+}setpoint_mode_t;
 
 typedef struct
 {
@@ -213,7 +213,7 @@ typedef struct
 	attitude_t attitudeRate;	// deg/s
 	point_t position;         	// m
 	velocity_t velocity;      	// m/s
-	mode_t mode;
+	setpoint_mode_t mode;
 	float thrust;
 } setpoint_t;
 
@@ -229,7 +229,7 @@ typedef struct
 #define RATE_1000_HZ 	1000
 
 #define MAIN_LOOP_RATE 	RATE_1000_HZ
-#define MAIN_LOOP_DT	(u32)(1000/MAIN_LOOP_RATE)	/*µ¥Î»ms*/
+#define MAIN_LOOP_DT	(u32)(1000/MAIN_LOOP_RATE)	/*ï¿½ï¿½Î»ms*/
 
 #define RATE_DO_EXECUTE(RATE_HZ, TICK) ((TICK % (MAIN_LOOP_RATE / RATE_HZ)) == 0)
 

@@ -35,28 +35,37 @@
 /** @brief Degrees to radians conversion factor. */
 #define DEG_TO_RAD (M_PI / 180.0f)
 
-struct commander {
-  commander_bits_t bits;
-  ctrl_cache_t remote_cache;
-  ctrl_cache_t wifi_cache;
-  yaw_mode_t yaw_mode;
-  uint32_t last_update_tick;
+/**
+ * @brief Runtime command state owned by the commander module.
+ *
+ * @details
+ * This struct centralizes input caches, mode flags, filtered stick values,
+ * and one-shot procedure states (auto-land/takeoff) so command interpretation
+ * remains deterministic across control-loop ticks.
+ */
+typedef struct commander {
+  commander_bits_t bits; // Packed control/status flags from UI and safety logic.
+  ctrl_cache_t remote_cache; // Double-buffered cache for radio controller input.
+  ctrl_cache_t wifi_cache; // Double-buffered cache for Wi-Fi controller input.
+  yaw_mode_t yaw_mode;     // Active yaw interpretation (x-mode or carefree).
+  uint32_t
+    last_update_tick; // Last control-input arrival tick for watchdog decisions.
 
-  commander_tune_t tune;
+  commander_tune_t tune; // Runtime tuning snapshot loaded from config service.
 
-  float lpf_roll;
-  float lpf_pitch;
-  float lpf_yaw;
-  float lpf_thrust;
+  float lpf_roll;   // LPF state for roll command (controller units).
+  float lpf_pitch;  // LPF state for pitch command (controller units).
+  float lpf_yaw;    // LPF state for yaw command (controller units).
+  float lpf_thrust; // LPF state for thrust command (raw thrust scale).
 
-  bool auto_land_active;
-  float auto_land_thrust;
+  bool auto_land_active;  // True while forced descent procedure is running.
+  float auto_land_thrust; // Current thrust during auto-land ramp-down.
 
-  bool takeoff_active;
-  float takeoff_thrust;
-};
+  bool takeoff_active;  // True while one-key takeoff ramp is running.
+  float takeoff_thrust; // Current thrust during takeoff ramp-up.
+} commander_t;
 
-static struct commander g_cmd;
+static commander_t g_cmd;
 
 /**
  * @brief  First-order IIR low-pass filter step.
@@ -90,9 +99,9 @@ static void rotate_carefree(float *roll, float *pitch, float yaw)
  * Decreases thrust by autolandRampStep each call and switches the
  * Z-axis mode to velocity so the position controller commands descent.
  */
-static void auto_land_ramp(float *thrust, mode_t *mode)
+static void auto_land_ramp(float *thrust, setpoint_mode_t *mode)
 {
-  *thrust -= g_cmd.tune.autolandRampStep;
+  *thrust -= g_cmd.tune.autoland_ramp_step;
   if (*thrust < 0.0f)
     *thrust = 0.0f;
   mode->z = MODE_VELOCITY;
@@ -103,7 +112,7 @@ void commander_init(void)
   memset(&g_cmd, 0, sizeof(g_cmd));
   const config_param_t *cfg = config_service_get();
   if (cfg)
-    g_cmd.tune = cfg->cmdTune;
+    g_cmd.tune = cfg->cmd_tune;
 }
 
 void commander_cache_ctrl_data(ctrl_src_t src, const ctrl_val_t *val)
@@ -171,7 +180,7 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
   memset(sp, 0, sizeof(*sp));
 
   /* --- Emergency stop: motors off immediately --- */
-  if (g_cmd.bits.emerStop) {
+  if (g_cmd.bits.emer_stop) {
     sp->thrust = 0.0f;
     return;
   }
@@ -179,7 +188,7 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
   /* --- Auto-land active: controlled descent --- */
   if (g_cmd.auto_land_active) {
     auto_land_ramp(&g_cmd.auto_land_thrust, &sp->mode);
-    sp->velocity.z = -g_cmd.tune.autolandDescent;
+    sp->velocity.z = -g_cmd.tune.autoland_descent;
     sp->thrust = g_cmd.auto_land_thrust;
     sp->mode.roll = MODE_ABS;
     sp->mode.pitch = MODE_ABS;
@@ -188,20 +197,20 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
   }
 
   /* --- Mode dispatch: rate / angle / full-assist --- */
-  uint8_t ctrl = g_cmd.bits.ctrlMode;
+  uint8_t ctrl = g_cmd.bits.ctrl_mode;
 
   if (ctrl == 0) {
     /* Manual / rate mode -- angular rate command */
-    sp->attitudeRate.roll = g_cmd.lpf_roll * g_cmd.tune.rateScaleRP;
-    sp->attitudeRate.pitch = g_cmd.lpf_pitch * g_cmd.tune.rateScaleRP;
-    sp->attitudeRate.yaw = g_cmd.lpf_yaw * g_cmd.tune.rateScaleYaw;
+    sp->attitude_rate.roll = g_cmd.lpf_roll * g_cmd.tune.rate_scale_rp;
+    sp->attitude_rate.pitch = g_cmd.lpf_pitch * g_cmd.tune.rate_scale_rp;
+    sp->attitude_rate.yaw = g_cmd.lpf_yaw * g_cmd.tune.rate_scale_yaw;
     sp->mode.roll = MODE_VELOCITY;
     sp->mode.pitch = MODE_VELOCITY;
     sp->mode.yaw = MODE_VELOCITY;
   } else if (ctrl == 1) {
     /* Angle mode -- absolute angle command */
-    float r = g_cmd.lpf_roll * g_cmd.tune.angleScaleRP;
-    float p = g_cmd.lpf_pitch * g_cmd.tune.angleScaleRP;
+    float r = g_cmd.lpf_roll * g_cmd.tune.angle_scale_rp;
+    float p = g_cmd.lpf_pitch * g_cmd.tune.angle_scale_rp;
 
     if (g_cmd.yaw_mode == YAW_CAREFREE)
       rotate_carefree(&r, &p, state->attitude.yaw * DEG_TO_RAD);
@@ -209,14 +218,14 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
     sp->attitude.roll = r;
     sp->attitude.pitch = p;
     sp->attitude.yaw = state->attitude.yaw;
-    sp->attitudeRate.yaw = g_cmd.lpf_yaw * g_cmd.tune.yawRateScale;
+    sp->attitude_rate.yaw = g_cmd.lpf_yaw * g_cmd.tune.yaw_rate_scale;
     sp->mode.roll = MODE_ABS;
     sp->mode.pitch = MODE_ABS;
     sp->mode.yaw = MODE_VELOCITY;
   } else {
     /* Full-assist (ctrl=2): same as angle mode for now */
-    float r = g_cmd.lpf_roll * g_cmd.tune.angleScaleRP;
-    float p = g_cmd.lpf_pitch * g_cmd.tune.angleScaleRP;
+    float r = g_cmd.lpf_roll * g_cmd.tune.angle_scale_rp;
+    float p = g_cmd.lpf_pitch * g_cmd.tune.angle_scale_rp;
 
     if (g_cmd.yaw_mode == YAW_CAREFREE)
       rotate_carefree(&r, &p, state->attitude.yaw * DEG_TO_RAD);
@@ -224,7 +233,7 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
     sp->attitude.roll = r;
     sp->attitude.pitch = p;
     sp->attitude.yaw = state->attitude.yaw;
-    sp->attitudeRate.yaw = g_cmd.lpf_yaw * g_cmd.tune.yawRateScale;
+    sp->attitude_rate.yaw = g_cmd.lpf_yaw * g_cmd.tune.yaw_rate_scale;
     sp->mode.roll = MODE_ABS;
     sp->mode.pitch = MODE_ABS;
     sp->mode.yaw = MODE_VELOCITY;
@@ -232,10 +241,10 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
 
   /* --- One-key takeoff ramp --- */
   if (g_cmd.takeoff_active) {
-    g_cmd.takeoff_thrust += g_cmd.tune.takeoffRampStep;
+    g_cmd.takeoff_thrust += g_cmd.tune.takeoff_ramp_step;
     float target = g_cmd.lpf_thrust;
-    if (target < g_cmd.tune.takeoffMinThrust)
-      target = g_cmd.tune.takeoffMinThrust;
+    if (target < g_cmd.tune.takeoff_min_thrust)
+      target = g_cmd.tune.takeoff_min_thrust;
     if (g_cmd.takeoff_thrust >= target) {
       g_cmd.takeoff_thrust = target;
       g_cmd.takeoff_active = false;
@@ -248,32 +257,32 @@ void commander_get_setpoint(setpoint_t *sp, const state_t *state)
 
 uint8_t commander_get_ctrl_mode(void)
 {
-  return g_cmd.bits.ctrlMode;
+  return g_cmd.bits.ctrl_mode;
 }
 
 bool commander_get_key_flight(void)
 {
-  return g_cmd.bits.keyFlight;
+  return g_cmd.bits.key_flight;
 }
 
 bool commander_get_key_land(void)
 {
-  return g_cmd.bits.keyLand;
+  return g_cmd.bits.key_land;
 }
 
 bool commander_get_emer_stop(void)
 {
-  return g_cmd.bits.emerStop;
+  return g_cmd.bits.emer_stop;
 }
 
 void commander_set_ctrl_mode(uint8_t mode)
 {
-  g_cmd.bits.ctrlMode = mode & 0x03;
+  g_cmd.bits.ctrl_mode = mode & 0x03;
 }
 
 void commander_set_key_flight(bool set)
 {
-  g_cmd.bits.keyFlight = set ? 1 : 0;
+  g_cmd.bits.key_flight = set ? 1 : 0;
   if (set) {
     g_cmd.takeoff_active = true;
     g_cmd.takeoff_thrust = 0.0f;
@@ -284,7 +293,7 @@ void commander_set_key_flight(bool set)
 
 void commander_set_key_land(bool set)
 {
-  g_cmd.bits.keyLand = set ? 1 : 0;
+  g_cmd.bits.key_land = set ? 1 : 0;
   if (set) {
     g_cmd.auto_land_active = true;
     g_cmd.auto_land_thrust = g_cmd.lpf_thrust;
@@ -295,11 +304,11 @@ void commander_set_key_land(bool set)
 
 void commander_set_flight_mode(bool carefree)
 {
-  g_cmd.bits.flightMode = carefree ? 1 : 0;
+  g_cmd.bits.flight_mode = carefree ? 1 : 0;
   g_cmd.yaw_mode = carefree ? YAW_CAREFREE : YAW_XMODE;
 }
 
 void commander_set_emer_stop(bool set)
 {
-  g_cmd.bits.emerStop = set ? 1 : 0;
+  g_cmd.bits.emer_stop = set ? 1 : 0;
 }

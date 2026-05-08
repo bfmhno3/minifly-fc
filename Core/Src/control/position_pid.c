@@ -41,30 +41,38 @@
 #define THRUST_BASE_CHANGE_THRESHOLD \
   1000.0f /* min delta to persist new thrust base */
 
-struct pid_s {
-  float kp;
-  float ki;
-  float kd;
-  float integ;
-  float prev_error;
-  float i_limit;
-  float out_limit;
-  float dt;
-};
+/**
+ * @brief State and configuration for a single PID controller instance.
+ *
+ * @details
+ * Holds both tuning parameters (kp/ki/kd) and runtime state (integ,
+ * prev_error) in one struct so each axis owns an independent, self-contained
+ * controller. Setting out_limit to 0.0f disables output saturation.
+ */
+typedef struct pid_controller {
+  float kp;    // Proportional gain.
+  float ki;    // Integral gain.
+  float kd;    // Derivative gain.
+  float integ; // Accumulated integral term; clamped to [-i_limit, i_limit].
+  float prev_error; // Error from the previous update step, used for D term.
+  float i_limit;    // Anti-windup clamp on the integral accumulator.
+  float out_limit;  // Output saturation limit; 0.0f disables clamping.
+  float dt;         // Fixed update interval (s), set once at init.
+} pid_controller_t;
 
-static struct pid_s pid_x;
-static struct pid_s pid_y;
-static struct pid_s pid_z;
-static struct pid_s pid_vx;
-static struct pid_s pid_vy;
-static struct pid_s pid_vz;
+static pid_controller_t pid_x;
+static pid_controller_t pid_y;
+static pid_controller_t pid_z;
+static pid_controller_t pid_vx;
+static pid_controller_t pid_vy;
+static pid_controller_t pid_vz;
 
 static float thrust_lpf;
 static uint16_t thrust_base;
 static uint16_t althold_count;
 
 /** @brief  Zero-initialise a PID instance with the given time step */
-static void pid_init(struct pid_s *pid, float dt)
+static void pid_init(pid_controller_t *pid, float dt)
 {
   pid->kp = 0.0f;
   pid->ki = 0.0f;
@@ -77,13 +85,13 @@ static void pid_init(struct pid_s *pid, float dt)
 }
 
 /** @brief  Clear integral accumulator and previous-error state */
-static void pid_reset(struct pid_s *pid)
+static void pid_reset(pid_controller_t *pid)
 {
   pid->integ = 0.0f;
   pid->prev_error = 0.0f;
 }
 
-static float pid_update(struct pid_s *pid, float error)
+static float pid_update(pid_controller_t *pid, float error)
 {
   float output;
 
@@ -127,8 +135,8 @@ void position_pid_init(float vel_dt, float pos_dt)
   pid_vz.out_limit = PID_VZ_OUT_LIMIT;
 
   if (cfg) {
-    position_pid_set_gains(&cfg->pidPos);
-    thrust_base = cfg->thrustBase;
+    position_pid_set_gains(&cfg->pid_pos);
+    thrust_base = cfg->thrust_base;
   } else {
     thrust_base = 20000;
   }
@@ -213,7 +221,7 @@ void position_pid_run(setpoint_t *sp, const state_t *state, attitude_t *att_out,
             THRUST_BASE_CHANGE_THRESHOLD) {
           config_param_t *cfg = config_service_mut();
           if (cfg) {
-            cfg->thrustBase = (uint16_t)thrust_lpf;
+            cfg->thrust_base = (uint16_t)thrust_lpf;
             config_service_mark_dirty();
           }
         }

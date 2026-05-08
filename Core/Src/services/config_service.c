@@ -59,66 +59,66 @@ static void config_set_defaults(void)
 {
   config_param.version = CONFIG_VERSION;
 
-  config_param.pidAngle.roll.kp = 8.0f;
-  config_param.pidAngle.roll.ki = 0.0f;
-  config_param.pidAngle.roll.kd = 0.0f;
+  config_param.pid_angle.roll.kp = 8.0f;
+  config_param.pid_angle.roll.ki = 0.0f;
+  config_param.pid_angle.roll.kd = 0.0f;
 
-  config_param.pidAngle.pitch.kp = 8.0f;
-  config_param.pidAngle.pitch.ki = 0.0f;
-  config_param.pidAngle.pitch.kd = 0.0f;
+  config_param.pid_angle.pitch.kp = 8.0f;
+  config_param.pid_angle.pitch.ki = 0.0f;
+  config_param.pid_angle.pitch.kd = 0.0f;
 
-  config_param.pidAngle.yaw.kp = 20.0f;
-  config_param.pidAngle.yaw.ki = 0.0f;
-  config_param.pidAngle.yaw.kd = 1.5f;
+  config_param.pid_angle.yaw.kp = 20.0f;
+  config_param.pid_angle.yaw.ki = 0.0f;
+  config_param.pid_angle.yaw.kd = 1.5f;
 
-  config_param.pidRate.roll.kp = 300.0f;
-  config_param.pidRate.roll.ki = 0.0f;
-  config_param.pidRate.roll.kd = 6.5f;
+  config_param.pid_rate.roll.kp = 300.0f;
+  config_param.pid_rate.roll.ki = 0.0f;
+  config_param.pid_rate.roll.kd = 6.5f;
 
-  config_param.pidRate.pitch.kp = 300.0f;
-  config_param.pidRate.pitch.ki = 0.0f;
-  config_param.pidRate.pitch.kd = 6.5f;
+  config_param.pid_rate.pitch.kp = 300.0f;
+  config_param.pid_rate.pitch.ki = 0.0f;
+  config_param.pid_rate.pitch.kd = 6.5f;
 
-  config_param.pidRate.yaw.kp = 200.0f;
-  config_param.pidRate.yaw.ki = 18.5f;
-  config_param.pidRate.yaw.kd = 0.0f;
+  config_param.pid_rate.yaw.kp = 200.0f;
+  config_param.pid_rate.yaw.ki = 18.5f;
+  config_param.pid_rate.yaw.kd = 0.0f;
 
-  config_param.pidPos.vx.kp = 4.5f;
-  config_param.pidPos.vx.ki = 0.0f;
-  config_param.pidPos.vx.kd = 0.0f;
+  config_param.pid_pos.vx.kp = 4.5f;
+  config_param.pid_pos.vx.ki = 0.0f;
+  config_param.pid_pos.vx.kd = 0.0f;
 
-  config_param.pidPos.vy.kp = 4.5f;
-  config_param.pidPos.vy.ki = 0.0f;
-  config_param.pidPos.vy.kd = 0.0f;
+  config_param.pid_pos.vy.kp = 4.5f;
+  config_param.pid_pos.vy.ki = 0.0f;
+  config_param.pid_pos.vy.kd = 0.0f;
 
-  config_param.pidPos.vz.kp = 100.0f;
-  config_param.pidPos.vz.ki = 150.0f;
-  config_param.pidPos.vz.kd = 10.0f;
+  config_param.pid_pos.vz.kp = 100.0f;
+  config_param.pid_pos.vz.ki = 150.0f;
+  config_param.pid_pos.vz.kd = 10.0f;
 
-  config_param.pidPos.x.kp = 4.0f;
-  config_param.pidPos.x.ki = 0.0f;
-  config_param.pidPos.x.kd = 0.6f;
+  config_param.pid_pos.x.kp = 4.0f;
+  config_param.pid_pos.x.ki = 0.0f;
+  config_param.pid_pos.x.kd = 0.6f;
 
-  config_param.pidPos.y.kp = 4.0f;
-  config_param.pidPos.y.ki = 0.0f;
-  config_param.pidPos.y.kd = 0.6f;
+  config_param.pid_pos.y.kp = 4.0f;
+  config_param.pid_pos.y.ki = 0.0f;
+  config_param.pid_pos.y.kd = 0.6f;
 
-  config_param.pidPos.z.kp = 6.0f;
-  config_param.pidPos.z.ki = 0.0f;
-  config_param.pidPos.z.kd = 4.5f;
+  config_param.pid_pos.z.kp = 6.0f;
+  config_param.pid_pos.z.ki = 0.0f;
+  config_param.pid_pos.z.kd = 4.5f;
 
-  config_param.trimP = 0.0f;
-  config_param.trimR = 0.0f;
-  config_param.thrustBase = 34000;
+  config_param.trim_p = 0.0f;
+  config_param.trim_r = 0.0f;
+  config_param.thrust_base = 34000;
 
-  config_param.cmdTune.rateScaleRP = 360.0f;
-  config_param.cmdTune.rateScaleYaw = 180.0f;
-  config_param.cmdTune.angleScaleRP = 30.0f;
-  config_param.cmdTune.yawRateScale = 120.0f;
-  config_param.cmdTune.autolandDescent = 0.5f;
-  config_param.cmdTune.autolandRampStep = 327.675f;
-  config_param.cmdTune.takeoffRampStep = 655.35f;
-  config_param.cmdTune.takeoffMinThrust = 16383.75f;
+  config_param.cmd_tune.rate_scale_rp = 360.0f;
+  config_param.cmd_tune.rate_scale_yaw = 180.0f;
+  config_param.cmd_tune.angle_scale_rp = 30.0f;
+  config_param.cmd_tune.yaw_rate_scale = 120.0f;
+  config_param.cmd_tune.autoland_descent = 0.5f;
+  config_param.cmd_tune.autoland_ramp_step = 327.675f;
+  config_param.cmd_tune.takeoff_ramp_step = 655.35f;
+  config_param.cmd_tune.takeoff_min_thrust = 16383.75f;
 
   config_param.checksum = config_checksum(&config_param);
 
@@ -248,9 +248,9 @@ void config_service_reset_pid(void)
   }
 
   xSemaphoreTake(mutex, portMAX_DELAY);
-  config_param.pidAngle = config_param_default.pidAngle;
-  config_param.pidRate = config_param_default.pidRate;
-  config_param.pidPos = config_param_default.pidPos;
+  config_param.pid_angle = config_param_default.pid_angle;
+  config_param.pid_rate = config_param_default.pid_rate;
+  config_param.pid_pos = config_param_default.pid_pos;
   xSemaphoreGive(mutex);
 
   config_service_mark_dirty();

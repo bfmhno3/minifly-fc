@@ -27,7 +27,7 @@ extern "C" {
 /**
  * @brief  Available LED ring visual effects.
  */
-typedef enum {
+typedef enum ledring_effect {
   LEDRING_EFFECT_OFF = 0,     /**< All LEDs off. */
   LEDRING_EFFECT_COLOR_TEST,  /**< Cycles through a 9-color test palette. */
   LEDRING_EFFECT_ATTITUDE,    /**< Pitch/roll mapped to LED brightness. */

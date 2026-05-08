@@ -26,7 +26,7 @@
 /**
  * @brief  Optical flow data snapshot returned by optical_flow_module_get_data().
  */
-typedef struct {
+typedef struct optical_flow_data {
   bool valid;       /**< data is valid and usable */
   float pos_sum[2]; /**< accumulated position, cm [x, y] */
   float vel_lpf[2]; /**< filtered velocity, cm/s [x, y] */

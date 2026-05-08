@@ -23,13 +23,13 @@ extern "C" {
  *
  * Passed to platform_fault_panic() to identify the source of the fault.
  */
-enum platform_fault_code {
+typedef enum platform_fault_code {
   PLATFORM_FAULT_HARD = 0,
   PLATFORM_FAULT_MEM = 1,
   PLATFORM_FAULT_BUS = 2,
   PLATFORM_FAULT_USAGE = 3,
   PLATFORM_FAULT_ASSERT = 4,
-};
+} platform_fault_code_t;
 
 /**
  * @brief  Initialize fault handling subsystem.

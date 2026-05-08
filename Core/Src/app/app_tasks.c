@@ -30,7 +30,7 @@
   1000U /**< placeholder task sleep interval */
 
 /** @brief  Table entry describing a single FreeRTOS task. */
-typedef struct {
+typedef struct app_task_definition {
   osThreadId_t *handle;  /**< receives the task handle from osThreadNew */
   const char *name;      /**< task name (max 16 chars for FreeRTOS) */
   uint32_t stack_size;   /**< stack size in bytes */

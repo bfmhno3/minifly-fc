@@ -20,26 +20,34 @@
 #define RATE_I_LIMIT_RP 500.0f /* roll/pitch rate I-limit (deg/s) */
 #define RATE_I_LIMIT_YAW 50.0f /* yaw rate I-limit (deg/s) */
 
-struct pid_s {
-  float kp;
-  float ki;
-  float kd;
-  float integ;
-  float prev_error;
-  float i_limit;
-  float out_limit;
-  float dt;
-};
+/**
+ * @brief State and configuration for a single PID controller instance.
+ *
+ * @details
+ * Holds both tuning parameters (kp/ki/kd) and runtime state (integ,
+ * prev_error) in one struct so each axis owns an independent, self-contained
+ * controller. Setting out_limit to 0.0f disables output saturation.
+ */
+typedef struct pid_controller {
+  float kp;    // Proportional gain.
+  float ki;    // Integral gain.
+  float kd;    // Derivative gain.
+  float integ; // Accumulated integral term; clamped to [-i_limit, i_limit].
+  float prev_error; // Error from the previous update step, used for D term.
+  float i_limit;    // Anti-windup clamp on the integral accumulator.
+  float out_limit;  // Output saturation limit; 0.0f disables clamping.
+  float dt;         // Fixed update interval (s), set once at init.
+} pid_controller_t;
 
-static struct pid_s pid_angle_roll;
-static struct pid_s pid_angle_pitch;
-static struct pid_s pid_angle_yaw;
-static struct pid_s pid_rate_roll;
-static struct pid_s pid_rate_pitch;
-static struct pid_s pid_rate_yaw;
+static pid_controller_t pid_angle_roll;
+static pid_controller_t pid_angle_pitch;
+static pid_controller_t pid_angle_yaw;
+static pid_controller_t pid_rate_roll;
+static pid_controller_t pid_rate_pitch;
+static pid_controller_t pid_rate_yaw;
 
 /** @brief  Zero-initialise a PID instance with the given time step */
-static void pid_init(struct pid_s *pid, float dt)
+static void pid_init(pid_controller_t *pid, float dt)
 {
   pid->kp = 0.0f;
   pid->ki = 0.0f;
@@ -52,7 +60,7 @@ static void pid_init(struct pid_s *pid, float dt)
 }
 
 /** @brief  Clear integral accumulator and previous-error state */
-static void pid_reset(struct pid_s *pid)
+static void pid_reset(pid_controller_t *pid)
 {
   pid->integ = 0.0f;
   pid->prev_error = 0.0f;
@@ -65,7 +73,7 @@ static void pid_reset(struct pid_s *pid)
  * @param[in] error  Setpoint minus measurement
  * @return  Control output (clamped to out_limit if non-zero)
  */
-static float pid_update(struct pid_s *pid, float error)
+static float pid_update(pid_controller_t *pid, float error)
 {
   float output;
 
@@ -144,7 +152,7 @@ void attitude_pid_set_rate_gains(const pid_group_t *gains)
 }
 
 void attitude_pid_run_angle(const attitude_t *actual, const attitude_t *desired,
-                            Axis3f *desired_rate)
+                            axis3f_t *desired_rate)
 {
   float yaw_error;
 
@@ -161,8 +169,8 @@ void attitude_pid_run_angle(const attitude_t *actual, const attitude_t *desired,
   desired_rate->z = pid_update(&pid_angle_yaw, yaw_error);
 }
 
-void attitude_pid_run_rate(const Axis3f *actual_rate,
-                           const Axis3f *desired_rate, Axis3f *control_out)
+void attitude_pid_run_rate(const axis3f_t *actual_rate,
+                           const axis3f_t *desired_rate, axis3f_t *control_out)
 {
   control_out->x = pid_update(&pid_rate_roll, desired_rate->x - actual_rate->x);
   control_out->y =

@@ -32,7 +32,7 @@ extern "C" {
  * Layout mirrors atkp_frame_t so the two can be cast-compatible,
  * but uses its own type to keep the transport layer decoupled.
  */
-typedef struct {
+typedef struct radio_frame {
   uint8_t msg_id;
   uint8_t data_len;
   uint8_t data[RADIOLINK_FRAME_DATA_MAX];

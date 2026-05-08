@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 /** @brief  Per-motor PWM values (raw timer compare units) */
-typedef struct {
+typedef struct motor_pwm {
   uint16_t m1; /**< Front-left motor */
   uint16_t m2; /**< Front-right motor */
   uint16_t m3; /**< Rear-right motor */

@@ -3,20 +3,20 @@
 #include "stabilizer_types.h"
 
 /********************************************************************************	 
- * ±¾³ÌÐòÖ»¹©Ñ§Ï°Ê¹ÓÃ£¬Î´¾­×÷ÕßÐí¿É£¬²»µÃÓÃÓÚÆäËüÈÎºÎÓÃÍ¾
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½Ñ§Ï°Ê¹ï¿½Ã£ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îºï¿½ï¿½ï¿½Í¾
  * ALIENTEK MiniFly
- * ´«¸ÐÆ÷¿ØÖÆ´úÂë	
- * ÕýµãÔ­×Ó@ALIENTEK
- * ¼¼ÊõÂÛÌ³:www.openedv.com
- * ´´½¨ÈÕÆÚ:2017/5/12
- * °æ±¾£ºV1.3
- * °æÈ¨ËùÓÐ£¬µÁ°æ±Ø¾¿¡£
- * Copyright(C) ¹ãÖÝÊÐÐÇÒíµç×Ó¿Æ¼¼ÓÐÏÞ¹«Ë¾ 2014-2024
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ´ï¿½ï¿½ï¿½	
+ * ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½@ALIENTEK
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì³:www.openedv.com
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½:2017/5/12
+ * ï¿½æ±¾ï¿½ï¿½V1.3
+ * ï¿½ï¿½È¨ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½Ø¾ï¿½ï¿½ï¿½
+ * Copyright(C) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¿Æ¼ï¿½ï¿½ï¿½ï¿½Þ¹ï¿½Ë¾ 2014-2024
  * All rights reserved
 ********************************************************************************/
 
 //#define SENSORS_ENABLE_MAG_AK8963
-#define SENSORS_ENABLE_PRESSURE_BMP280	/*ÆøÑ¹¼ÆÊ¹ÓÃbmp280*/
+#define SENSORS_ENABLE_PRESSURE_BMP280	/*ï¿½ï¿½Ñ¹ï¿½ï¿½Ê¹ï¿½ï¿½bmp280*/
 
 #define BARO_UPDATE_RATE		RATE_50_HZ
 #define SENSOR9_UPDATE_RATE   	RATE_500_HZ
@@ -24,18 +24,18 @@
 
 	
 void sensorsTask(void *param);
-void sensorsInit(void);			/*´«¸ÐÆ÷³õÊ¼»¯*/
-bool sensorsTest(void);			/*´«¸ÐÆ÷²âÊÔ*/
-bool sensorsAreCalibrated(void);	/*´«¸ÐÆ÷Êý¾ÝÐ£×¼*/
-void sensorsAcquire(sensorData_t *sensors, const u32 tick);/*»ñÈ¡´«¸ÐÆ÷Êý¾Ý*/
+void sensorsInit(void);			/*ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½*/
+bool sensorsTest(void);			/*ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½*/
+bool sensorsAreCalibrated(void);	/*ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£×¼*/
+void sensorsAcquire(sensorData_t *sensors, const u32 tick);/*ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½*/
 void getSensorRawData(Axis3i16* acc, Axis3i16* gyro, Axis3i16* mag);
 bool getIsMPU9250Present(void);
 bool getIsBaroPresent(void);
 
-/* µ¥¶À²âÁ¿´«¸ÐÆ÷Êý¾Ý */
-bool sensorsReadGyro(Axis3f *gyro);
-bool sensorsReadAcc(Axis3f *acc);
-bool sensorsReadMag(Axis3f *mag);
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+bool sensorsReadGyro(axis3f_t *gyro);
+bool sensorsReadAcc(axis3f_t *acc);
+bool sensorsReadMag(axis3f_t *mag);
 bool sensorsReadBaro(baro_t *baro);
 
 #endif //__SENSORS_H

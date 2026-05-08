@@ -18,14 +18,14 @@
 #define M_PI 3.14159265358979323846f
 #endif
 
-void lpf2p_init(lpf2pData *lpf, float sample_freq, float cutoff_freq)
+void lpf2p_init(lpf2p_data_t *lpf, float sample_freq, float cutoff_freq)
 {
   lpf2p_set_cutoff(lpf, sample_freq, cutoff_freq);
   lpf->delay_element_1 = 0.0f;
   lpf->delay_element_2 = 0.0f;
 }
 
-void lpf2p_set_cutoff(lpf2pData *lpf, float sample_freq, float cutoff_freq)
+void lpf2p_set_cutoff(lpf2p_data_t *lpf, float sample_freq, float cutoff_freq)
 {
   float fr = sample_freq / cutoff_freq; /* frequency ratio */
   float omega = (float)tan(
@@ -41,7 +41,7 @@ void lpf2p_set_cutoff(lpf2pData *lpf, float sample_freq, float cutoff_freq)
   lpf->a2 = lpf->b0 * (1.0f - alpha * cs + cs * cs);
 }
 
-float lpf2p_apply(lpf2pData *lpf, float sample)
+float lpf2p_apply(lpf2p_data_t *lpf, float sample)
 {
   float delay_element_0 =
     sample - lpf->delay_element_1 * lpf->a1 - lpf->delay_element_2 * lpf->a2;

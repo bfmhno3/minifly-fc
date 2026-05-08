@@ -18,6 +18,7 @@
 #define __USBLINK_H
 
 #include <stdbool.h>
+
 #include "comm/atkp.h"
 
 #ifdef __cplusplus

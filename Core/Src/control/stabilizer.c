@@ -213,7 +213,7 @@ void stabilizer_get_sensor_data(sensor_data_t *out)
   *out = sensor_data;
 }
 
-void stabilizer_get_state(Axis3f *acc, Axis3f *vel, Axis3f *pos)
+void stabilizer_get_state(axis3f_t *acc, axis3f_t *vel, axis3f_t *pos)
 {
   acc->x = state.acc.x;
   acc->y = state.acc.y;

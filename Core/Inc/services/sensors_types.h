@@ -21,7 +21,7 @@ extern "C" {
 /**
  * @brief  Compensated barometer readings.
  */
-typedef struct {
+typedef struct baro {
   float pressure;    /**< Atmospheric pressure (hPa) */
   float temperature; /**< Ambient temperature (deg C) */
   float asl;         /**< Altitude above sea level (cm) */
@@ -32,10 +32,10 @@ typedef struct {
  *
  * Populated by sensors_task and published via queues.
  */
-typedef struct {
-  Axis3f acc;  /**< Accelerometer (g) */
-  Axis3f gyro; /**< Gyroscope (deg/s) */
-  Axis3f mag;  /**< Magnetometer (unused placeholder) */
+typedef struct sensor_data {
+  axis3f_t acc;  /**< Accelerometer (g) */
+  axis3f_t gyro; /**< Gyroscope (deg/s) */
+  axis3f_t mag;  /**< Magnetometer (unused placeholder) */
   baro_t baro; /**< Barometer */
 } sensor_data_t;
 

@@ -41,7 +41,7 @@ extern "C" {
  * Each ID maps to a fixed-size payload assembled by the periodic telemetry
  * sender in atkp.c.
  */
-typedef enum {
+typedef enum atkp_up_msg_id {
   ATKP_UP_VERSION = 0x00,
   ATKP_UP_STATUS = 0x01,
   ATKP_UP_SENSOR = 0x02,
@@ -80,7 +80,7 @@ typedef enum {
  *
  * Carries commands, RC stick values, PID parameters, and radio config.
  */
-typedef enum {
+typedef enum atkp_down_msg_id {
   ATKP_DOWN_COMMAND = 0x01,
   ATKP_DOWN_ACK = 0x02,
   ATKP_DOWN_RCDATA = 0x03,
@@ -130,7 +130,7 @@ typedef enum {
  * Passed between the transport layer and the application layer.
  * @c data_len bytes of @c data are valid when received from the queue.
  */
-typedef struct {
+typedef struct atkp_frame {
   uint8_t msg_id;
   uint8_t data_len;
   uint8_t data[ATKP_FRAME_DATA_MAX];

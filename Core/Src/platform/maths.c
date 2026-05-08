@@ -206,7 +206,7 @@ float maths_wrap_360(float angle)
 
 /* --- vector / rotation --- */
 
-void maths_vec3_normalize(const Axis3f *src, Axis3f *dst)
+void maths_vec3_normalize(const axis3f_t *src, axis3f_t *dst)
 {
   float len = sqrtf(src->x * src->x + src->y * src->y + src->z * src->z);
   if (len > 0.0f) {
@@ -216,7 +216,7 @@ void maths_vec3_normalize(const Axis3f *src, Axis3f *dst)
   }
 }
 
-void maths_rotation_matrix(const EulerAngle *euler, float m[3][3])
+void maths_rotation_matrix(const euler_angle_t *euler, float m[3][3])
 {
   float cx = maths_cos(euler->roll);
   float sx = maths_sin(euler->roll);
@@ -244,9 +244,9 @@ void maths_rotation_matrix(const EulerAngle *euler, float m[3][3])
   m[2][AXIS_Z] = cy * cx;
 }
 
-void maths_vec3_rotate(Axis3f *v, const EulerAngle *delta)
+void maths_vec3_rotate(axis3f_t *v, const euler_angle_t *delta)
 {
-  Axis3f tmp = *v;
+  axis3f_t tmp = *v;
   float m[3][3];
 
   maths_rotation_matrix(delta, m);

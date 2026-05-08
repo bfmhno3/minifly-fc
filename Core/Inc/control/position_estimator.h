@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 /** @brief External sensor data from the optical flow module */
-typedef struct {
+typedef struct pos_estimator_ext {
   bool valid;          /**< true when optical flow data is usable */
   float pos_sum[2];    /**< integrated XY position (cm) */
   float vel_lpf[2];    /**< filtered XY velocity (cm/s) */

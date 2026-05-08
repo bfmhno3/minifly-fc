@@ -31,13 +31,13 @@
   50 /**< ADC counts, half-width of identification window */
 
 /** @brief  Maps an ADC center value to a module ID. */
-typedef struct {
+typedef struct module_adc_entry {
   uint16_t adc_center;
   bsp_module_id_t id;
 } module_adc_entry_t;
 
 /** @brief  Maps a module ID to its init/deinit function pair. */
-typedef struct {
+typedef struct module_handler_entry {
   bsp_module_id_t id;
   void (*init)(void);
   void (*deinit)(void);

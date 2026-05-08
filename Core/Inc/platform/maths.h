@@ -75,7 +75,7 @@ float maths_acos(float x);
  * Numerically stable incremental variance computation -- avoids
  * catastrophic cancellation from large intermediate sums.
  */
-typedef struct {
+typedef struct maths_stdev {
   float m_old_m;
   float m_new_m;
   float m_old_s;
@@ -130,20 +130,20 @@ float maths_wrap_360(float angle);
  * Used as input to maths_rotation_matrix() which applies ZYX intrinsic
  * convention: yaw first, then pitch, then roll.
  */
-typedef struct {
+typedef struct euler_angle {
   float roll;
   float pitch;
   float yaw;
-} EulerAngle;
+} euler_angle_t;
 
 /** @brief  Normalize a 3D vector. No-op if length is zero. */
-void maths_vec3_normalize(const Axis3f *src, Axis3f *dst);
+void maths_vec3_normalize(const axis3f_t *src, axis3f_t *dst);
 
 /** @brief  Build a 3x3 rotation matrix from Euler angles (ZYX intrinsic). */
-void maths_rotation_matrix(const EulerAngle *euler, float matrix[3][3]);
+void maths_rotation_matrix(const euler_angle_t *euler, float matrix[3][3]);
 
 /** @brief  Rotate vector v in-place by Euler angle delta. */
-void maths_vec3_rotate(Axis3f *v, const EulerAngle *delta);
+void maths_vec3_rotate(axis3f_t *v, const euler_angle_t *delta);
 
 /* --- median filter --- */
 
