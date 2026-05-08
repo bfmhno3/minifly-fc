@@ -135,7 +135,8 @@ void position_pid_init(float vel_dt, float pos_dt)
   pid_vz.out_limit = PID_VZ_OUT_LIMIT;
 
   if (cfg) {
-    position_pid_set_gains(&cfg->pid_pos);
+    pid_group_pos_t pid_pos = cfg->pid_pos;
+    position_pid_set_gains(&pid_pos);
     thrust_base = cfg->thrust_base;
   } else {
     thrust_base = 20000;
