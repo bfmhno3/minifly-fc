@@ -13,6 +13,7 @@
 #include "services/console_service.h"
 
 #include <string.h>
+#include <stdio.h>
 #include "FreeRTOS.h"
 #include "semphr.h"
 #include "usart.h"

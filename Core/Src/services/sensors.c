@@ -180,7 +180,7 @@ static bool i2c_read_bytes(uint8_t dev_addr, uint8_t reg_addr, uint8_t *buf, uin
  * ready (1 kHz).  This ISR posts the semaphore that wakes sensors_task.
  * ======================================================================== */
 
-void HAL_GPIO_EXTI_Callback(uint16_t pin)
+void sensors_exti_callback(uint16_t pin)
 {
     if (pin == GPIO_PIN_4) {
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;

@@ -22,6 +22,8 @@
 #include "main.h"
 #include "usart.h"
 #include "services/ledseq.h"
+#include "queue.h"
+#include "semphr.h"
 
 /** @brief RX byte queue depth. */
 #define RADIOLINK_RX_QUEUE_BYTES 1024
@@ -147,7 +149,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
  * When PA0 goes high the nRF24L01 is not ready to receive, so we pause
  * the DMA; when it goes low we resume.
  */
-void HAL_GPIO_EXTI_Callback(uint16_t pin)
+void radiolink_exti_callback(uint16_t pin)
 {
 	if (pin != GPIO_PIN_0)
 		return;
