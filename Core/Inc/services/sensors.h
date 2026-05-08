@@ -105,6 +105,9 @@ bool sensors_is_mpu_present(void);
  */
 bool sensors_is_baro_present(void);
 
+/** @brief  EXTI callback for MPU6500 DRDY (PA4). Called from platform_irq dispatcher. */
+void sensors_exti_callback(uint16_t pin);
+
 #ifdef __cplusplus
 }
 #endif

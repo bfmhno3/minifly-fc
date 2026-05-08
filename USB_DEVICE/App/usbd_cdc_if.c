@@ -23,6 +23,8 @@
 
 /* USER CODE BEGIN INCLUDE */
 #include "cmsis_os.h"
+#include "queue.h"
+#include "semphr.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/

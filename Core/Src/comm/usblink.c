@@ -19,6 +19,7 @@
 #include "cmsis_os.h"
 #include "usbd_cdc_if.h"
 #include "queue.h"
+#include <semphr.h>
 
 /** @brief RX byte queue depth. */
 #define USBLINK_RX_QUEUE_BYTES 1024
@@ -200,7 +201,7 @@ bool usblink_get_frame(atkp_frame_t *frame)
 	return true;
 }
 
-bool usblink_send_frame(atkp_frame_t *frame)
+bool usblink_send_frame(const atkp_frame_t *frame)
 {
 	return xQueueSend(g_usblink.tx_queue, frame, 0) == pdTRUE;
 }

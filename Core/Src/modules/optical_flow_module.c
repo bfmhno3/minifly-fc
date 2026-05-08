@@ -28,6 +28,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 /* --- PMW3901 optical flow sensor constants --- */
 

@@ -14,6 +14,7 @@
 #include "comm/usblink.h"
 #include "services/console_service.h"
 #include "cmsis_os.h"
+#include <queue.h>
 
 /** @brief RX queue depth (in frames). */
 #define ATKP_RX_QUEUE_SIZE 10

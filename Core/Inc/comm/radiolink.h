@@ -81,6 +81,9 @@ bool radiolink_get_frame(radio_frame_t *frame);
  */
 bool radiolink_send_frame(const radio_frame_t *frame);
 
+/** @brief  EXTI callback for nRF24L01 flow control (PA0). Called from platform_irq dispatcher. */
+void radiolink_exti_callback(uint16_t pin);
+
 #ifdef __cplusplus
 }
 #endif

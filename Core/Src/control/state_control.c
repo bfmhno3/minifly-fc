@@ -117,9 +117,9 @@ void state_control_run(control_t *out, const sensor_data_t *sensor,
 	/* rate pid: inner loop at 500 hz */
 	if (RATE_DO_EXECUTE(RATE_PID_RATE, tick)) {
 		if (sp->mode.roll == MODE_VELOCITY)
-			rate_desired.roll = sp->attitudeRate.roll;
+			rate_desired.x = sp->attitudeRate.roll;
 		if (sp->mode.pitch == MODE_VELOCITY)
-			rate_desired.pitch = sp->attitudeRate.pitch;
+			rate_desired.y = sp->attitudeRate.pitch;
 
 		attitude_pid_run_rate(&sensor->gyro, &rate_desired,
 				      &control_out);

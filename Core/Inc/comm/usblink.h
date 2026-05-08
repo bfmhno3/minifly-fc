@@ -72,7 +72,7 @@ bool usblink_get_frame(atkp_frame_t *frame);
  * @retval true   Frame was enqueued.
  * @retval false  TX queue is full -- frame dropped.
  */
-bool usblink_send_frame(atkp_frame_t *frame);
+bool usblink_send_frame(const atkp_frame_t *frame);
 
 #ifdef __cplusplus
 }

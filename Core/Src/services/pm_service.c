@@ -58,9 +58,9 @@ void pm_service_update_voltage(void *atkp)
         return;
     }
 
-    atkp_t *packet = (atkp_t *)atkp;
+    atkp_frame_t *packet = (atkp_frame_t *)atkp;
 
-    if (packet->dataLen < sizeof(pm_syslink_info_t))
+    if (packet->data_len < sizeof(pm_syslink_info_t))
     {
         return;
     }

@@ -15,6 +15,8 @@
  */
 #include "bsp_ws2812.h"
 
+#include <string.h>
+
 #include "stm32f4xx_hal.h"
 
 #include "FreeRTOS.h"
@@ -271,7 +273,7 @@ static void ws2812_dma_tc_cb(DMA_HandleTypeDef *hdma)
      * with the next LED's data. When all LEDs are sent, write zeros
      * for the reset period (>60 us low) then stop.
      */
-    if (__HAL_DMA_GET_CURRENT_TARGET(&hdma_tim3_ch1) == DMA_TARGET_0) {
+    if ((hdma_tim3_ch1.Instance->CR & DMA_SxCR_CT) == 0) {
         /* buf0 just finished, buf1 is active -> fill buf0 next */
         if (current_led < total_leds) {
             fill_led_pwm(dma_buf0, color_ptr[current_led]);

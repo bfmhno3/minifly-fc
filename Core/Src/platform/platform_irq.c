@@ -15,6 +15,10 @@
 #include "stm32f4xx_hal.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "services/sensors.h"
+#include "comm/radiolink.h"
+
+// extern void xPortSysTickHandler(void);
 
 /* Accumulates SysTick interrupts before the FreeRTOS scheduler starts.
  * Unused once xTaskGetTickCount() becomes the authoritative tick source. */
@@ -41,10 +45,19 @@ uint32_t platform_irq_get_tick_ms(void)
  * Delegates to FreeRTOS tick handler once the scheduler is running;
  * otherwise increments the bare-metal counter for pre-scheduler delays.
  */
-void SysTick_Handler(void)
+// void SysTick_Handler(void)
+// {
+//     if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
+//         xPortSysTickHandler();
+//     else
+//         irq_tick_cnt++;
+// }
+
+/**
+ * @brief  Unified GPIO EXTI callback -- dispatches to per-module handlers.
+ */
+void HAL_GPIO_EXTI_Callback(uint16_t pin)
 {
-    if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
-        xPortSysTickHandler();
-    else
-        irq_tick_cnt++;
+    sensors_exti_callback(pin);
+    radiolink_exti_callback(pin);
 }
