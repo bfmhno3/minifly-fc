@@ -11,13 +11,9 @@
 
 #include "app/app_boot.h"
 
-#include "bsp_led.h"
-#include "bsp_module.h"
-#include "bsp_sensors.h"
+#include "platform/platform_init.h"
 
 void app_boot_init(void)
 {
-  bsp_led_init();     /* first: visual feedback for subsequent init */
-  bsp_module_init();  /* module connector ADC and power pin */
-  bsp_sensors_init(); /* IMU, barometer, etc. */
+  platform_init();
 }

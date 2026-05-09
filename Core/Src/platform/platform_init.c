@@ -14,12 +14,17 @@
 #include "platform/platform_irq.h"
 #include "platform/platform_fault.h"
 #include "platform/timebase.h"
-#include "bsp_led.h"
+#include "services/config_service.h"
+#include "services/pm_service.h"
+#include "services/ledseq.h"
+#include "services/console_service.h"
+#include "comm/comm_stack.h"
+#include "modules/module_manager.h"
+#include "control/stabilizer.h"
 #include "bsp_module.h"
 #include "bsp_sensors.h"
-#include "services/config_service.h"
-#include "control/stabilizer.h"
-#include "modules/module_manager.h"
+#include "bsp_led.h"
+#include "bsp_watchdog.h"
 
 void platform_init(void)
 {
@@ -29,11 +34,14 @@ void platform_init(void)
   platform_timebase_init();
   platform_fault_init();
   bsp_led_init();
-  bsp_module_init();
-  bsp_sensors_init();
+  ledseq_init();
+  comm_stack_init();
+  console_service_init();
   config_service_init();
+  pm_service_init();
   stabilizer_init();
   module_manager_init();
+  bsp_watchdog_init(0);
 }
 
 /**
