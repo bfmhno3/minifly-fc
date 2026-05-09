@@ -12,6 +12,7 @@
 #include "app/app_boot.h"
 
 #include "platform/platform_init.h"
+#include "main.h"
 
 void app_boot_init(void)
 {
