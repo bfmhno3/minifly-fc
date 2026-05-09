@@ -4,9 +4,15 @@
  * @brief  Independent watchdog (IWDG) abstraction for the Minifly board.
  *
  * @details
- * Wraps CubeMX's MX_IWDG_Init() and HAL_IWDG_Refresh().  The timeout
- * parameter is accepted for API compatibility but the actual period is
- * determined by CubeMX IWDG configuration.
+ * This module wraps CubeMX-generated IWDG primitives and exposes a small BSP API.
+ *
+ * Hardware dependency:
+ * - Requires CubeMX IWDG setup in `iwdg.c` (`MX_IWDG_Init`) and global handle `hiwdg`.
+ *
+ * Design notes:
+ * - `timeout_ms` is accepted for API compatibility with other platforms, but the actual
+ *   watchdog period is defined by CubeMX prescaler/reload configuration.
+ * - APIs are non-blocking and keep internal state to avoid refreshing before startup.
  */
 
 #ifndef BSP_WATCHDOG_H
@@ -19,21 +25,26 @@ extern "C" {
 #endif
 
 /**
- * @brief Initialize the independent watchdog.
+ * @brief Initialize the independent watchdog peripheral.
  *
- * @param[in] timeout_ms  Requested timeout in milliseconds (currently unused;
- *                        actual period is set by CubeMX IWDG config).
+ * @param[in] timeout_ms  Requested timeout in milliseconds. Currently unused by this
+ *                        backend; real timeout is fixed by CubeMX IWDG configuration.
  *
- * @note Must be called before bsp_watchdog_kick().
+ * @pre `MX_IWDG_Init()` must be available from CubeMX-generated code.
+ * @attention Once started, IWDG cannot be stopped on STM32F4 and must be refreshed
+ *            periodically to avoid a system reset.
  */
 void bsp_watchdog_init(uint32_t timeout_ms);
 
 /**
- * @brief Refresh (kick) the watchdog to prevent reset.
+ * @brief Refresh (kick) the watchdog counter.
  *
- * @note If the watchdog was not explicitly initialized but the IWDG peripheral
- *       is running (e.g. started by CubeMX), this function marks the module as
- *       initialized and proceeds with the refresh.
+ * @details
+ * If the module was not initialized via `bsp_watchdog_init()` but IWDG is already
+ * running (for example, started by system init code), this function auto-detects
+ * that state and enables refresh.
+ *
+ * @pre IWDG must be started either by `bsp_watchdog_init()` or equivalent startup code.
  */
 void bsp_watchdog_kick(void);
 

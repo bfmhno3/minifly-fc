@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: MIT
 /**
  * @file
- * @brief  Independent watchdog (IWDG) driver implementation.
+ * @brief  Independent watchdog (IWDG) BSP implementation.
  *
  * @details
- * Delegates to CubeMX-generated MX_IWDG_Init() for peripheral setup and
- * HAL_IWDG_Refresh() for the kick operation.  Tracks initialization state
- * so bsp_watchdog_kick() can auto-detect a running IWDG.
+ * Delegates peripheral setup to CubeMX-generated `MX_IWDG_Init()` and refresh
+ * to `HAL_IWDG_Refresh()`. A local initialization flag is used to prevent
+ * unintended refresh attempts before IWDG startup is confirmed.
  */
+
 #include "bsp_watchdog.h"
 
-#include "iwdg.h"
-
 #include <stdbool.h>
+
+#include "iwdg.h"
 
 static bool watchdog_initialized = false;
 
@@ -26,7 +27,7 @@ void bsp_watchdog_init(uint32_t timeout_ms)
 
 void bsp_watchdog_kick(void)
 {
-  /* Auto-detect: if IWDG is already running (e.g. CubeMX started it), mark initialized */
+  // Support projects where IWDG is started outside this BSP module.
   if (!watchdog_initialized && (hiwdg.Instance == IWDG)) {
     watchdog_initialized = true;
   }
