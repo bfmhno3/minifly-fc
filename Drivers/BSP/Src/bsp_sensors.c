@@ -565,7 +565,6 @@ bool bsp_sensors_read_magnetometer_raw(bsp_sensors_axis3i16_t *magnetometer)
 
   /* 6 data bytes: HXL, HXH, HYL, HYH, HZL, HZH (little-endian pairs) */
   magnetometer->x = bsp_sensors_read_le16(&raw_data[1]);
-  magnetometer->x = bsp_sensors_read_le16(&raw_data[1]);
   magnetometer->y = bsp_sensors_read_le16(&raw_data[3]);
   magnetometer->z = bsp_sensors_read_le16(&raw_data[5]);
 
