@@ -16,4 +16,10 @@
 void app_boot_init(void)
 {
   platform_init();
+
+  if (!platform_self_test()) {
+    /* Sensors failed to initialize -- halt with LED error pattern.
+     * The watchdog will reset the board if this persists. */
+    Error_Handler();
+  }
 }
