@@ -245,11 +245,11 @@ A complete quadcopter flight controller running on the **STM32F411CEUx** (Cortex
 ### Flight Control Pipeline
 
 ```
- +----------+     +-------------+     +-------------+     +----------+
+ +-----------+     +-------------+     +-------------+     +----------+
  |  Sensor   |---->|  Attitude   |---->|  Position   |---->| Commander|
  |  Acquire  |     |  Estimator  |     |  Estimator  |     | Setpoint |
  |  (500Hz)  |     |  (250 Hz)   |     |  (250 Hz)   |     | (100 Hz) |
- +----------+     +-------------+     +-------------+     +----------+
+ +-----------+     +-------------+     +-------------+     +----------+
        |                                      |                 |
        v                                      v                 v
  +----------+                          +-------------+    +----------+
