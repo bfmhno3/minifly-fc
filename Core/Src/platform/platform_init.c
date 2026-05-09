@@ -21,6 +21,7 @@
 #include "comm/comm_stack.h"
 #include "modules/module_manager.h"
 #include "control/stabilizer.h"
+#include "bsp_flash.h"
 #include "bsp_module.h"
 #include "bsp_sensors.h"
 #include "bsp_led.h"
@@ -34,6 +35,9 @@ void platform_init(void)
   platform_timebase_init();
   platform_fault_init();
   bsp_led_init();
+  bsp_sensors_init();
+  bsp_flash_init();
+  bsp_module_init();
   ledseq_init();
   comm_stack_init();
   console_service_init();
