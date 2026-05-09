@@ -1,21 +1,28 @@
 // SPDX-License-Identifier: MIT
 /**
  * @file
- * @brief  I2C sensor bus implementation — MPU6500, AK8963, BMP280, SPL06.
+ * @brief  I2C sensor bus implementation for MPU6500 IMU, AK8963 magnetometer, and barometer.
  *
  * @details
- * All I2C traffic goes through hi2c1 (CubeMX-configured).  Device addresses
- * are 7-bit; the HAL expects left-shifted form, handled by
- * bsp_sensors_hal_address().
+ * Hardware resources:
+ * - I2C1 (hi2c1, STM32CubeMX pre-configured; 20ms per-transfer timeout)
+ * - PA4 GPIO for MPU data-ready interrupt (active-high, directly wired to MPU INT pin)
+ * - MPU6500 at 0x68 (AD0=GND) or 0x69 (AD0=VCC)
+ * - AK8963 at 0x0C (behind MPU bypass; requires MPU INT_PIN_CFG.I2C_BYPASS_EN = 1)
+ * - BMP280 or SPL06 at 0x76 (mutual address conflict; probed in priority order)
+ *
+ * Module state (probe results) is cached; no thread-safe locks enforced.
+ * All timeouts and retry counts are tuned for nominal I2C bus conditions.
  */
-#include "bsp_sensors.h"
 
-#include "i2c.h"
-#include "main.h"
+#include "bsp_sensors.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+
+#include "i2c.h"
+#include "main.h"
 
 #define BSP_SENSORS_I2C_TIMEOUT_MS 20u /* Per-transfer I2C timeout */
 #define BSP_SENSORS_I2C_RETRIES \
@@ -25,7 +32,7 @@
 #define BSP_SENSORS_DRDY_PORT GPIOA
 #define BSP_SENSORS_DRDY_PIN GPIO_PIN_4
 
-/* --- I2C device addresses (7-bit) --- */
+/* --- I2C device addresses (7-bit form; HAL expects left-shifted 8-bit) --- */
 #define BSP_SENSORS_MPU_ADDRESS_LOW 0x68u  /* AD0 = GND */
 #define BSP_SENSORS_MPU_ADDRESS_HIGH 0x69u /* AD0 = VCC */
 #define BSP_SENSORS_AK8963_ADDRESS 0x0Cu   /* AK8963 mag, behind MPU bypass */
@@ -111,20 +118,35 @@
 #define BSP_SENSORS_SPL06_INT_FIFO_CFG_VALUE \
   0x0Cu /* FIFO disabled, active-high INT */
 
-typedef struct {
+typedef struct bsp_sensors_context {
   bool initialized;
   bsp_sensors_status_t status;
 } bsp_sensors_context_t;
 
 static bsp_sensors_context_t sensors_context = { 0 };
 
-/** @brief Convert 7-bit I2C address to HAL's left-shifted 8-bit format. */
+/**
+ * @brief Convert 7-bit I2C address to HAL's left-shifted 8-bit slave address format.
+ *
+ * @param[in] address 7-bit address
+ * @return HAL slave address (left-shifted 8-bit)
+ */
 static uint16_t bsp_sensors_hal_address(uint8_t address)
 {
   return (uint16_t)(address << 1);
 }
 
-/** @brief Read @p length bytes from @p register_address on @p device_address. */
+/**
+ * @brief Read @p length bytes from @p register_address on @p device_address.
+ *
+ * @param[in] device_address Target I2C slave address (7-bit)
+ * @param[in] register_address Register index
+ * @param[out] buffer Destination for read data
+ * @param[in] length Number of bytes to read
+ *
+ * @retval true Read succeeded
+ * @retval false NULL pointer, zero length, or I2C error
+ */
 static bool bsp_sensors_read(uint8_t device_address, uint8_t register_address,
                              uint8_t *buffer, uint16_t length)
 {
@@ -137,7 +159,16 @@ static bool bsp_sensors_read(uint8_t device_address, uint8_t register_address,
                           length, BSP_SENSORS_I2C_TIMEOUT_MS) == HAL_OK;
 }
 
-/** @brief Write a single byte to @p register_address on @p device_address. */
+/**
+ * @brief Write a single byte to @p register_address on @p device_address.
+ *
+ * @param[in] device_address Target I2C slave address (7-bit)
+ * @param[in] register_address Register index
+ * @param[in] value Byte value to write
+ *
+ * @retval true Write succeeded
+ * @retval false I2C error
+ */
 static bool bsp_sensors_write(uint8_t device_address, uint8_t register_address,
                               uint8_t value)
 {
@@ -148,7 +179,14 @@ static bool bsp_sensors_write(uint8_t device_address, uint8_t register_address,
                            BSP_SENSORS_I2C_TIMEOUT_MS) == HAL_OK;
 }
 
-/** @brief Probe I2C bus for a device at @p device_address (ACK check). */
+/**
+ * @brief Probe I2C bus for device presence via repeated ACK polling.
+ *
+ * @param[in] device_address Target I2C slave address (7-bit)
+ *
+ * @retval true Device ACK'd within retry and timeout limits
+ * @retval false No ACK received
+ */
 static bool bsp_sensors_probe_device(uint8_t device_address)
 {
   return HAL_I2C_IsDeviceReady(&hi2c1, bsp_sensors_hal_address(device_address),
@@ -156,7 +194,14 @@ static bool bsp_sensors_probe_device(uint8_t device_address)
                                BSP_SENSORS_I2C_TIMEOUT_MS) == HAL_OK;
 }
 
-/** @brief Probe and verify MPU WHO_AM_I register at @p address. */
+/**
+ * @brief Probe and verify MPU6500 presence via WHO_AM_I register.
+ *
+ * @param[in] address Candidate MPU I2C address (7-bit)
+ *
+ * @retval true Device responded and WHO_AM_I matches MPU6500 signature
+ * @retval false No ACK, read error, or invalid WHO_AM_I
+ */
 static bool bsp_sensors_probe_mpu(uint8_t address)
 {
   uint8_t who_am_i = 0u;
@@ -173,14 +218,26 @@ static bool bsp_sensors_probe_mpu(uint8_t address)
          BSP_SENSORS_MPU_WHO_AM_I_VALUE;
 }
 
-/** @brief Reset MPU, configure gyro/accel FS, DLPF, and enable data-ready interrupt. */
+/**
+ * @brief Reset and configure MPU6500 for 6-axis + temperature output.
+ *
+ * Sets gyro FS to +/-2000 dps, accel FS to +/-16g, enables MPU I2C bypass
+ * (for AK8963 access), and enables data-ready interrupt on INT pin.
+ *
+ * @param[in] address MPU I2C address (7-bit)
+ *
+ * @retval true All register writes succeeded
+ * @retval false At least one write failed
+ *
+ * @note 20ms delay required after reset (waiting for internal PLL lock)
+ */
 static bool bsp_sensors_init_mpu(uint8_t address)
 {
   if (!bsp_sensors_write(address, BSP_SENSORS_MPU_REG_PWR_MGMT_1, 0x80u)) {
     return false;
   }
 
-  /* --- Wait for MPU to complete internal reset (datasheet: 100ms typ, 20ms sufficient here) --- */
+  // FIXME: Datasheet specifies 100ms typical; 20ms chosen to balance boot speed vs stability.
   HAL_Delay(20u);
 
   return bsp_sensors_write(address, BSP_SENSORS_MPU_REG_PWR_MGMT_1,
@@ -202,7 +259,14 @@ static bool bsp_sensors_init_mpu(uint8_t address)
                            BSP_SENSORS_MPU_INT_STATUS_DATA_READY);
 }
 
-/** @brief Probe AK8963 magnetometer via MPU bypass and verify WIA register. */
+/**
+ * @brief Probe AK8963 magnetometer via MPU I2C bypass and verify WIA.
+ *
+ * Assumes MPU bypass is already enabled by bsp_sensors_init_mpu().
+ *
+ * @retval true AK8963 responded with correct WIA value
+ * @retval false No ACK, read error, or wrong WIA
+ */
 static bool bsp_sensors_probe_ak8963(void)
 {
   uint8_t device_id = 0u;
@@ -219,7 +283,12 @@ static bool bsp_sensors_probe_ak8963(void)
   return device_id == BSP_SENSORS_AK8963_WIA_VALUE;
 }
 
-/** @brief Set AK8963 to continuous measurement mode (16-bit, 100 Hz). */
+/**
+ * @brief Configure AK8963 for continuous 100 Hz measurement (16-bit resolution).
+ *
+ * @retval true Configuration writes succeeded
+ * @retval false At least one write failed
+ */
 static bool bsp_sensors_init_ak8963(void)
 {
   return bsp_sensors_write(BSP_SENSORS_AK8963_ADDRESS,
@@ -229,7 +298,12 @@ static bool bsp_sensors_init_ak8963(void)
                            BSP_SENSORS_AK8963_MODE_CONTINUOUS_16BIT_100HZ);
 }
 
-/** @brief Probe BMP280 barometer and verify chip ID. */
+/**
+ * @brief Probe BMP280 barometer and verify chip ID.
+ *
+ * @retval true BMP280 responded with correct chip ID
+ * @retval false No ACK, read error, or wrong chip ID
+ */
 static bool bsp_sensors_probe_bmp280(void)
 {
   uint8_t chip_id = 0u;
@@ -246,7 +320,15 @@ static bool bsp_sensors_probe_bmp280(void)
   return chip_id == BSP_SENSORS_BMP280_CHIP_ID;
 }
 
-/** @brief Configure BMP280 for oversampled normal mode (x16, 500ms standby). */
+/**
+ * @brief Configure BMP280 for continuous normal mode with high oversampling.
+ *
+ * Sets pressure and temperature oversampling to x16 (best accuracy trade-off).
+ * Standby time set to 500ms between measurements. IIR filter = x16.
+ *
+ * @retval true Both register writes succeeded
+ * @retval false At least one write failed
+ */
 static bool bsp_sensors_init_bmp280(void)
 {
   return bsp_sensors_write(BSP_SENSORS_BMP280_ADDRESS,
@@ -257,7 +339,12 @@ static bool bsp_sensors_init_bmp280(void)
                            BSP_SENSORS_BMP280_CONFIG_VALUE);
 }
 
-/** @brief Probe SPL06 barometer and verify chip ID. */
+/**
+ * @brief Probe SPL06 barometer and verify chip ID.
+ *
+ * @retval true SPL06 responded with correct chip ID
+ * @retval false No ACK, read error, or wrong chip ID
+ */
 static bool bsp_sensors_probe_spl06(void)
 {
   uint8_t chip_id = 0u;
@@ -274,7 +361,15 @@ static bool bsp_sensors_probe_spl06(void)
   return chip_id == BSP_SENSORS_SPL06_CHIP_ID;
 }
 
-/** @brief Configure SPL06 for continuous mode, 64 Hz, oversample x64. */
+/**
+ * @brief Configure SPL06 for continuous 64 Hz measurement with aggressive oversampling.
+ *
+ * Oversampling x64 reduces measurement noise at the cost of ~500ms settling per sample.
+ * Suitable for low-speed flight control loops (< 100 Hz).
+ *
+ * @retval true All register writes succeeded
+ * @retval false At least one write failed
+ */
 static bool bsp_sensors_init_spl06(void)
 {
   return bsp_sensors_write(BSP_SENSORS_SPL06_ADDRESS,
@@ -291,19 +386,37 @@ static bool bsp_sensors_init_spl06(void)
                            BSP_SENSORS_SPL06_MODE_CFG_VALUE);
 }
 
-/** @brief Decode big-endian 16-bit signed value (MPU byte order). */
+/**
+ * @brief Decode 16-bit signed big-endian (MPU byte order: MSB first).
+ *
+ * @param[in] data Pointer to 2-byte buffer
+ * @return Signed 16-bit value
+ */
 static int16_t bsp_sensors_read_be16(const uint8_t *data)
 {
   return (int16_t)(((uint16_t)data[0] << 8) | data[1]);
 }
 
-/** @brief Decode little-endian 16-bit signed value (AK8963 byte order). */
+/**
+ * @brief Decode 16-bit signed little-endian (AK8963 byte order: LSB first).
+ *
+ * @param[in] data Pointer to 2-byte buffer
+ * @return Signed 16-bit value
+ */
 static int16_t bsp_sensors_read_le16(const uint8_t *data)
 {
   return (int16_t)(((uint16_t)data[1] << 8) | data[0]);
 }
 
-/** @brief Sign-extend a 24-bit raw value to 32 bits (BMP280/SPL06 data format). */
+/**
+ * @brief Sign-extend a 24-bit raw value to 32-bit signed integer.
+ *
+ * Detects sign bit (bit 23) and fills upper 8 bits with sign extension.
+ * Required by BMP280 and SPL06 which output 24-bit two's complement ADC readings.
+ *
+ * @param[in] value 24-bit unsigned value (bit 23 is sign)
+ * @return 32-bit sign-extended value
+ */
 static int32_t bsp_sensors_sign_extend_24(uint32_t value)
 {
   if ((value & 0x00800000u) != 0u) /* bit 23 set: negative */
@@ -374,12 +487,13 @@ bool bsp_sensors_is_data_ready(void)
   if (!sensors_context.initialized || !sensors_context.status.imu_present) {
     return false;
   }
-
+  /* GPIO must assert (active-high) */
   if (HAL_GPIO_ReadPin(BSP_SENSORS_DRDY_PORT, BSP_SENSORS_DRDY_PIN) !=
       GPIO_PIN_SET) {
     return false;
   }
 
+  /* MPU interrupt status register must also indicate data ready */
   if (!bsp_sensors_read(sensors_context.status.imu_address,
                         BSP_SENSORS_MPU_REG_INT_STATUS, &status, 1u)) {
     return false;
@@ -408,6 +522,7 @@ bool bsp_sensors_read_imu_raw(bsp_sensors_axis3i16_t *accelerometer,
     return false;
   }
 
+  /* 14-byte burst: ACCEL_X(2) + ACCEL_Y(2) + ACCEL_Z(2) + TEMP(2) + GYRO_X(2) + GYRO_Y(2) + GYRO_Z(2) */
   accelerometer->x = bsp_sensors_read_be16(&raw_data[0]);
   accelerometer->y = bsp_sensors_read_be16(&raw_data[2]);
   accelerometer->z = bsp_sensors_read_be16(&raw_data[4]);
@@ -437,15 +552,19 @@ bool bsp_sensors_read_magnetometer_raw(bsp_sensors_axis3i16_t *magnetometer)
     return false;
   }
 
+  /* Check DRDY bit in ST1 (first byte) */
   if ((raw_data[0] & BSP_SENSORS_AK8963_STATUS_DATA_READY) == 0u) {
     return false;
   }
 
+  /* Check overflow and error bits in ST2 (last byte); reject if set */
   if ((raw_data[6] & (BSP_SENSORS_AK8963_STATUS_OVERFLOW |
                       BSP_SENSORS_AK8963_STATUS_DATA_ERROR)) != 0u) {
     return false;
   }
 
+  /* 6 data bytes: HXL, HXH, HYL, HYH, HZL, HZH (little-endian pairs) */
+  magnetometer->x = bsp_sensors_read_le16(&raw_data[1]);
   magnetometer->x = bsp_sensors_read_le16(&raw_data[1]);
   magnetometer->y = bsp_sensors_read_le16(&raw_data[3]);
   magnetometer->z = bsp_sensors_read_le16(&raw_data[5]);
@@ -473,7 +592,8 @@ bool bsp_sensors_read_barometer_raw(bsp_sensors_baro_raw_t *barometer)
       return false;
     }
 
-    /* BMP280: 20-bit unsigned, MSB-aligned in 3 bytes (shift right 4 bits) */
+    /* BMP280 ADC format: 20-bit unsigned, MSB-aligned in 3 bytes.
+       Shift logical right 4 bits to get 20-bit value into lower bits. */
     barometer->pressure =
       (int32_t)((((uint32_t)raw_data[0]) << 12) |
                 (((uint32_t)raw_data[1]) << 4) | ((uint32_t)raw_data[2] >> 4));
@@ -490,7 +610,8 @@ bool bsp_sensors_read_barometer_raw(bsp_sensors_baro_raw_t *barometer)
       return false;
     }
 
-    /* SPL06: 24-bit signed, big-endian (sign-extend before use) */
+    /* SPL06 ADC format: 24-bit signed, big-endian (MSB first).
+       Requires sign-extension from 24 bits to 32 bits. */
     barometer->pressure =
       bsp_sensors_sign_extend_24(((uint32_t)raw_data[0] << 16) |
                                  ((uint32_t)raw_data[1] << 8) | raw_data[2]);
