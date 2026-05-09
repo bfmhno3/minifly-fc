@@ -20,36 +20,33 @@ extern "C" {
 #endif
 
 /** @brief Signed 3-axis raw reading (accelerometer, gyroscope, or magnetometer). */
-typedef struct
-{
-    int16_t x;
-    int16_t y;
-    int16_t z;
+typedef struct {
+  int16_t x;
+  int16_t y;
+  int16_t z;
 } bsp_sensors_axis3i16_t;
 
 /** @brief Raw barometer reading before compensation. */
-typedef struct
-{
-    int32_t pressure;    /**< Raw pressure (device-specific encoding). */
-    int32_t temperature; /**< Raw temperature (device-specific encoding). */
+typedef struct {
+  int32_t pressure;    /**< Raw pressure (device-specific encoding). */
+  int32_t temperature; /**< Raw temperature (device-specific encoding). */
 } bsp_sensors_baro_raw_t;
 
 /** @brief Detected barometer IC type. */
-typedef enum
-{
-    BSP_SENSORS_BAROMETER_NONE = 0,
-    BSP_SENSORS_BAROMETER_BMP280 = 1,
-    BSP_SENSORS_BAROMETER_SPL06 = 2,
+typedef enum {
+  BSP_SENSORS_BAROMETER_NONE = 0,
+  BSP_SENSORS_BAROMETER_BMP280 = 1,
+  BSP_SENSORS_BAROMETER_SPL06 = 2,
 } bsp_sensors_barometer_type_t;
 
 /** @brief Probe result — which sensors are present on the I2C bus. */
-typedef struct
-{
-    bool imu_present;
-    bool magnetometer_present;
-    bool barometer_present;
-    bsp_sensors_barometer_type_t barometer_type;
-    uint8_t imu_address; /**< 7-bit I2C address of the detected IMU (0x68 or 0x69). */
+typedef struct {
+  bool imu_present;
+  bool magnetometer_present;
+  bool barometer_present;
+  bsp_sensors_barometer_type_t barometer_type;
+  uint8_t
+    imu_address; /**< 7-bit I2C address of the detected IMU (0x68 or 0x69). */
 } bsp_sensors_status_t;
 
 /**
@@ -96,10 +93,9 @@ bool bsp_sensors_is_data_ready(void);
  * @retval true  Read succeeded.
  * @retval false Not initialized, IMU absent, or I2C failure.
  */
-bool bsp_sensors_read_imu_raw(
-    bsp_sensors_axis3i16_t *accelerometer,
-    bsp_sensors_axis3i16_t *gyroscope,
-    int16_t *temperature_raw);
+bool bsp_sensors_read_imu_raw(bsp_sensors_axis3i16_t *accelerometer,
+                              bsp_sensors_axis3i16_t *gyroscope,
+                              int16_t *temperature_raw);
 
 /**
  * @brief Read magnetometer data from AK8963 via MPU bypass.

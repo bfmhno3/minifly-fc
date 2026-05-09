@@ -17,14 +17,13 @@ extern "C" {
  * details and electrical polarity local to the BSP layer.
  */
 
-enum
-{
-    BSP_LED_BLUE_L = 0,
-    BSP_LED_GREEN_L = 1,
-    BSP_LED_RED_L = 2,
-    BSP_LED_GREEN_R = 3,
-    BSP_LED_RED_R = 4,
-    BSP_LED_COUNT = 5
+enum {
+  BSP_LED_BLUE_L = 0,
+  BSP_LED_GREEN_L = 1,
+  BSP_LED_RED_L = 2,
+  BSP_LED_GREEN_R = 3,
+  BSP_LED_RED_R = 4,
+  BSP_LED_COUNT = 5
 };
 
 /**

@@ -15,13 +15,12 @@
 extern "C" {
 #endif
 
-enum
-{
-    BSP_MOTOR_1 = 0,
-    BSP_MOTOR_2 = 1,
-    BSP_MOTOR_3 = 2,
-    BSP_MOTOR_4 = 3,
-    BSP_MOTOR_COUNT = 4
+enum {
+  BSP_MOTOR_1 = 0,
+  BSP_MOTOR_2 = 1,
+  BSP_MOTOR_3 = 2,
+  BSP_MOTOR_4 = 3,
+  BSP_MOTOR_COUNT = 4
 };
 
 /**

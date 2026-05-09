@@ -18,13 +18,12 @@ extern "C" {
  * power control for the shared module power pin.
  */
 
-typedef enum
-{
-    BSP_MODULE_NONE = 0,
-    BSP_MODULE_LED_RING = 1,
-    BSP_MODULE_WIFI_CAMERA = 2,
-    BSP_MODULE_OPTICAL_FLOW = 3,
-    BSP_MODULE_RESERVED_1 = 4,
+typedef enum {
+  BSP_MODULE_NONE = 0,
+  BSP_MODULE_LED_RING = 1,
+  BSP_MODULE_WIFI_CAMERA = 2,
+  BSP_MODULE_OPTICAL_FLOW = 3,
+  BSP_MODULE_RESERVED_1 = 4,
 } bsp_module_id_t;
 
 /**

@@ -18,7 +18,7 @@ extern "C" {
  * DMA: DMA1_Stream4 / Channel 5, double-buffer mode.
  */
 
-#define BSP_WS2812_LED_COUNT  12
+#define BSP_WS2812_LED_COUNT 12
 
 /**
  * @brief Initialize TIM3, DMA, and GPIO for WS2812 output.
