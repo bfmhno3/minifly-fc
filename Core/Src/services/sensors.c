@@ -887,13 +887,11 @@ void sensors_task(void *arg)
       sensors_process_baro();
     }
 
-    taskENTER_CRITICAL();
     xQueueOverwrite(gyro_queue, &sensors_data.gyro);
     xQueueOverwrite(accel_queue, &sensors_data.acc);
     if (dev_status.barometer_present) {
       xQueueOverwrite(baro_queue, &sensors_data.baro);
     }
-    taskEXIT_CRITICAL();
 
     tick++;
   }
