@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: MIT
 /**
  * @file
- * @brief Flash memory layout constants for the Minifly board.
+ * @brief Flash memory map constants for the Minifly board.
  *
- * All addresses and sizes are expressed as preprocessor defines so they can
- * be used in linker scripts, vector table relocation, and flash read/write
- * routines without requiring a .c translation unit.
+ * @details
+ * This header defines the fixed flash region boundaries used by boot, config,
+ * and application images. Values are macros so they can be shared by linker
+ * scripts, startup code, and flash IAP routines without introducing a .c unit.
+ *
+ * Hardware assumption:
+ * - Target MCU flash base address is provided by STM32 device headers.
  */
+
 #ifndef BOARD_MEMORY_H
 #define BOARD_MEMORY_H
 
@@ -16,22 +21,38 @@
 extern "C" {
 #endif
 
-/* Bootloader region: 16 KB starting at FLASH_BASE */
+/* ------------------------------------------------------------------ */
+/* Flash layout                                                       */
+/* ------------------------------------------------------------------ */
+
+/* Bootloader region size: first 16 KB from FLASH_BASE. */
 #define BOARD_FLASH_BOOTLOADER_SIZE (16u * 1024u)
 
-/* Config parameter region: 16 KB immediately after bootloader */
+/* Configuration region size: next 16 KB after bootloader. */
 #define BOARD_FLASH_CONFIG_SIZE (16u * 1024u)
 
-/* Combined offset from FLASH_BASE to the application region */
+/* Application offset from FLASH_BASE (bootloader + config). */
 #define BOARD_FLASH_APP_OFFSET \
   (BOARD_FLASH_BOOTLOADER_SIZE + BOARD_FLASH_CONFIG_SIZE)
 
-/* Absolute addresses */
+/* ------------------------------------------------------------------ */
+/* Absolute region addresses                                          */
+/* ------------------------------------------------------------------ */
+
+/* Start address of configuration region. */
 #define BOARD_FLASH_CONFIG_ADDR (FLASH_BASE + BOARD_FLASH_BOOTLOADER_SIZE)
+
+/* Start address of application region. */
 #define BOARD_FLASH_APP_ADDR (FLASH_BASE + BOARD_FLASH_APP_OFFSET)
 
-/* MCU device signature addresses (read-only, factory-programmed) */
+/* ------------------------------------------------------------------ */
+/* Factory-programmed MCU information (read-only)                     */
+/* ------------------------------------------------------------------ */
+
+/* Unique device ID base address (96-bit device identifier). */
 #define BOARD_MCU_ID_ADDR 0x1FFF7A10UL
+
+/* Flash size register address (device-reported flash capacity). */
 #define BOARD_MCU_FLASH_SIZE_ADDR 0x1FFF7A22UL
 
 #ifdef __cplusplus

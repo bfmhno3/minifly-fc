@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 /**
  * @file
- * @brief Umbrella header for the Minifly board definition module.
+ * @brief Umbrella include for Minifly board-level definitions.
  *
- * Include this single header to gain access to all board-level constants:
- * flash memory layout, system clock, peripheral counts, feature flags, and
- * expansion module ADC thresholds.
+ * @details
+ * Include this header when board constants are needed by higher-level modules.
+ * It aggregates hardware feature configuration and flash memory mapping so users
+ * do not need to include multiple board headers directly.
  */
+
 #ifndef BOARD_H
 #define BOARD_H
 
