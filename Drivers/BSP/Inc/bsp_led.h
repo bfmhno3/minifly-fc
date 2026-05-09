@@ -1,3 +1,12 @@
+// SPDX-License-Identifier: MIT
+/**
+ * @file
+ * @brief Board-level API for controlling on-board status LEDs.
+ *
+ * This header exposes the logical LED interface. GPIO mapping and electrical
+ * polarity are intentionally hidden in the BSP implementation.
+ */
+
 #ifndef BSP_LED_H
 #define BSP_LED_H
 
@@ -7,15 +16,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// SPDX-License-Identifier: MIT
-/**
- * @file
- * @brief Board support package interface for on-board status LEDs.
- *
- * This module exposes a board-level LED control API while keeping the GPIO
- * details and electrical polarity local to the BSP layer.
- */
 
 enum {
   BSP_LED_BLUE_L = 0,
@@ -27,30 +27,28 @@ enum {
 };
 
 /**
- * @brief Initialize the LED module.
+ * @brief Initialize the LED module and force all LEDs to logical off.
  *
- * This function drives every LED to the logical off state.
+ * @pre GPIO for all LED pins must already be initialized by board startup code.
  */
 void bsp_led_init(void);
 
 /**
- * @brief Set the logical state of one LED.
+ * @brief Set one LED to a logical state.
  *
- * @param id LED identifier in the range [0, BSP_LED_COUNT).
- * @param on Logical LED state where true means on and false means off.
+ * @param[in] id LED identifier in range [0, BSP_LED_COUNT).
+ * @param[in] on Logical target state, true for on and false for off.
  *
- * @note This function has no effect if the module is not initialized or if the
- * LED identifier is invalid.
+ * @note Call is ignored if the module is not initialized or if `id` is out of range.
  */
 void bsp_led_set(uint8_t id, bool on);
 
 /**
- * @brief Toggle the logical state of one LED.
+ * @brief Toggle one LED logical state.
  *
- * @param id LED identifier in the range [0, BSP_LED_COUNT).
+ * @param[in] id LED identifier in range [0, BSP_LED_COUNT).
  *
- * @note This function has no effect if the module is not initialized or if the
- * LED identifier is invalid.
+ * @note Call is ignored if the module is not initialized or if `id` is out of range.
  */
 void bsp_led_toggle(uint8_t id);
 
