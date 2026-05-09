@@ -2,13 +2,15 @@
 /**
  * @file
  * @brief  Internal flash driver implementation for STM32F411.
- * 
+ *
  * @details
- * The STM32F411xE has 512 KB of internal flash organized as sectors 0-3
- * (16 KB each), sector 4 (64 KB), and sectors 5-7 (128 KB each).
- * The bootloader (sector 0) and config parameter (sector 1) regions are
- * protected by address-range checks and cannot be written or erased
- * through this driver.
+ * STM32F411xE flash layout:
+ * - Sectors 0-3: 16 KB each
+ * - Sector    4: 64 KB
+ * - Sectors 5-7: 128 KB each
+ *
+ * This implementation rejects operations that touch reserved regions
+ * (bootloader/config sectors) and enforces 32-bit alignment.
  */
 #include "bsp_flash.h"
 
@@ -34,7 +36,7 @@
 /* STM32F4 flash can only be programmed one word (32 bits) at a time */
 #define BSP_FLASH_WORD_SIZE_BYTES 4u
 
-typedef struct {
+typedef struct bsp_flash_sector {
   uint32_t start_address;
   uint32_t end_address;
   uint32_t sector;
@@ -54,14 +56,29 @@ static const bsp_flash_sector_t flash_sectors[] = {
 
 static bool flash_initialized = false;
 
-/** @brief Check that address and length are word-aligned (4-byte boundary). */
+/**
+ * @brief Validate 32-bit alignment for address and length.
+ *
+ * @details
+ * STM32F4 word programming requires both start address and transfer size
+ * to be aligned to 4 bytes.
+ */
 static bool bsp_flash_is_aligned(uint32_t address, size_t length)
 {
   return ((address % BSP_FLASH_WORD_SIZE_BYTES) == 0u) &&
          ((length % BSP_FLASH_WORD_SIZE_BYTES) == 0u);
 }
 
-/** @brief Compute end address with overflow protection. Returns false on NULL or overflow. */
+/**
+ * @brief Compute range end address with overflow protection.
+ *
+ * @param[in]  address      Range start address.
+ * @param[in]  length       Range size in bytes (must be non-zero).
+ * @param[out] end_address  Computed end address: address + length.
+ *
+ * @retval true  Computation succeeded.
+ * @retval false Invalid output pointer, zero length, or uint32 overflow.
+ */
 static bool bsp_flash_get_range_end(uint32_t address, size_t length,
                                     uint32_t *end_address)
 {
@@ -81,7 +98,13 @@ static bool bsp_flash_get_range_end(uint32_t address, size_t length,
   return true;
 }
 
-/** @brief Find the flash sector containing @p address, or NULL if out of range. */
+/**
+ * @brief Locate the sector that contains the given address.
+ *
+ * @param[in] address Flash address to classify.
+ *
+ * @return Sector descriptor pointer, or NULL if out of known flash map.
+ */
 static const bsp_flash_sector_t *bsp_flash_find_sector(uint32_t address)
 {
   size_t index = 0u;
@@ -96,7 +119,13 @@ static const bsp_flash_sector_t *bsp_flash_find_sector(uint32_t address)
   return NULL;
 }
 
-/** @brief Reject writes to bootloader/config regions and reads past end of flash. */
+/**
+ * @brief Check whether a range is inside allowed writable flash space.
+ *
+ * @details
+ * Reads/writes/erases are intentionally blocked below writable start to
+ * protect bootloader and persistent configuration regions.
+ */
 static bool bsp_flash_is_access_allowed(uint32_t address, size_t length)
 {
   uint32_t end_address = 0u;
@@ -116,13 +145,24 @@ static bool bsp_flash_is_access_allowed(uint32_t address, size_t length)
   return true;
 }
 
-/** @brief Unlock flash for programming. Returns false if HAL rejects the unlock. */
+/**
+ * @brief Unlock flash control register for erase/program operations.
+ *
+ * @retval true  HAL unlock accepted.
+ * @retval false HAL unlock rejected.
+ */
 static bool bsp_flash_unlock(void)
 {
   return HAL_FLASH_Unlock() == HAL_OK;
 }
 
-/** @brief Re-lock flash after programming (ignores HAL errors). */
+/**
+ * @brief Lock flash control register after modification operations.
+ *
+ * @details
+ * Lock failure is ignored because callers already have operation status
+ * from erase/program APIs, and lock has no recovery path here.
+ */
 static void bsp_flash_lock(void)
 {
   (void)HAL_FLASH_Lock();
