@@ -30,6 +30,9 @@ static uint16_t clamp_u16(int32_t value)
 void power_control_init(void)
 {
   bsp_motors_init();
+  /* NOTE: motors_start() is called before sensors are initialized.
+   * This is safe because bsp_motors_init() zeros all PWM channels first,
+   * but a future refactor should defer start until stabilizer_task begins. */
   bsp_motors_start();
 
   override_enabled = false;

@@ -65,9 +65,10 @@ static void send_frame_dual(const atkp_frame_t *frame)
 /**
  * @brief  Zero-fill a payload buffer and set its length.
  *
- * Telemetry frames carry real sensor data in production;
- * this placeholder zeroes the payload so the protocol framing
- * can be exercised independently of the sensor pipeline.
+ * TODO: Replace with real data from stabilizer_get_attitude(),
+ * stabilizer_get_sensor_data(), pm_service_get_voltage(),
+ * power_control_get_pwm(), etc.  Frame sizes (27/26/18/13/8/4/12 bytes)
+ * must match the ground station protocol expectations.
  */
 static void fill_with(uint8_t *data, uint8_t *len, uint8_t size)
 {
@@ -160,6 +161,12 @@ void atkp_tx_task(void *arg)
   }
 }
 
+/**
+ * @brief  Dual-link RX task -- polls radio and USB for received frames.
+ *
+ * TODO: Replace busy-poll with a shared semaphore that both radiolink
+ * and usblink signal on frame arrival, to reduce CPU usage.
+ */
 void atkp_rx_task(void *arg)
 {
   atkp_frame_t frame;

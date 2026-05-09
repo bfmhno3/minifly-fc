@@ -253,6 +253,10 @@ void DMA1_Stream4_IRQHandler(void)
   // DMA1_Stream4 is shared between SPI2 TX and WS2812 (TIM3_CH1).
   // Dispatch based on the active module to avoid one handler
   // clearing the other's interrupt flags.
+  // NOTE: module_manager_get_active() reads a global volatile -- acceptable
+  //       in ISR, but adds a few cycles to this time-critical path.  If
+  //       latency becomes a problem, cache the active module in a local flag
+  //       updated during module transitions instead of reading on every IRQ.
   if (module_manager_get_active() == BSP_MODULE_LED_RING) {
       bsp_ws2812_dma_isr();
       return;
